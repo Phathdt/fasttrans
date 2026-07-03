@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+// Source of truth for the gRPC contract shared between transfer (client) and account (server).
+// Copy verbatim into services/transfer/src/main/proto and services/account/src/main/proto when building.
+package fasttrans.account.v1;
+
+option java_multiple_files = true;
+option java_package = "com.fasttrans.account.grpc";
+option java_outer_classname = "AccountProto";
+
+service AccountService {
+  // Check whether account_ref belongs to user_id (ownership) before creating a transfer.
+  rpc ValidateOwnership(ValidateOwnershipRequest) returns (ValidateOwnershipResponse);
+  // List all of the user's accounts (for GET /accounts on the transfer side).
+  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+}
+
+message ValidateOwnershipRequest {
+  string user_id = 1;
+  string account_ref = 2; // public 12-digit reference, NOT the internal UUID
+}
+
+message ValidateOwnershipResponse {
+  bool owned = 1;
+}
+
+message ListAccountsRequest {
+  string user_id = 1;
+}
+
+message ListAccountsResponse {
+  repeated Account accounts = 1;
+}
+
+message Account {
+  string account_ref = 1;
+  string owner_name = 2;
+  int64 balance = 3;   // minor units (VND: 1 = 1 dong)
+  string currency = 4;
+}
