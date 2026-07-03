@@ -1,0 +1,173 @@
+services:
+  # ─────────────────────────── Gateway ───────────────────────────
+  traefik:
+    image: traefik:v3.7.5   # Docker client supports API 1.44+ (Docker 29 daemon)
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --entrypoints.web.address=:80
+      - --api.insecure=true          # dashboard demo only
+    ports:
+      - "80:80"
+      - "8081:8080"                  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      auth:
+        condition: service_healthy
+      transfer:
+        condition: service_healthy
+
+  # ─────────────────────────── Services ───────────────────────────
+  auth:
+    build: ./services/auth
+    environment:
+      DB_HOST: postgres
+      DB_USER: fasttrans
+      DB_PASSWORD: fasttrans
+      REDIS_HOST: redis
+      JWT_SECRET: change-me-demo-secret-key-at-least-32-bytes-long!!
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      # Route /api/auth/* (no ForwardAuth). Strip /api → controller mounts at /auth.
+      - "traefik.http.routers.auth.rule=PathPrefix(`/api/auth`)"
+      - "traefik.http.routers.auth.entrypoints=web"
+      - "traefik.http.routers.auth.middlewares=strip-api@docker"
+      - "traefik.http.middlewares.strip-api.stripprefix.prefixes=/api"
+      # Define the forward-auth middleware here (shared; transfer references it in Phase 5).
+      - "traefik.http.middlewares.forward-auth.forwardauth.address=http://auth:8080/auth/verify"
+      - "traefik.http.middlewares.forward-auth.forwardauth.authResponseHeaders=X-User-Id"
+      - "traefik.http.services.auth.loadbalancer.server.port=8080"
+
+  transfer:
+    build: ./services/transfer
+    environment:
+      DB_HOST: postgres
+      DB_USER: fasttrans
+      DB_PASSWORD: fasttrans
+      KAFKA_BOOTSTRAP: redpanda:29092
+      ACCOUNT_GRPC_HOST: account
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+      account:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      # Route /api/transfers/* and /api/accounts → transfer service, after ForwardAuth + strip /api
+      - "traefik.http.routers.transfer.rule=PathPrefix(`/api/transfers`) || PathPrefix(`/api/accounts`)"
+      - "traefik.http.routers.transfer.entrypoints=web"
+      - "traefik.http.routers.transfer.middlewares=strip-api@docker,forward-auth@docker"
+      - "traefik.http.services.transfer.loadbalancer.server.port=8080"
+
+  account:
+    build: ./services/account
+    environment:
+      DB_HOST: postgres
+      DB_USER: fasttrans
+      DB_PASSWORD: fasttrans
+      KAFKA_BOOTSTRAP: redpanda:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    # gRPC port 9090 is exposed internally only (transfer → account); not routed through Traefik.
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      # Route / → FE (priority 1 — lower than /api routes' default priority 2+)
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.priority=1"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+
+  # ─────────────────────────── Datastores ───────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fasttrans
+      POSTGRES_PASSWORD: fasttrans
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"   # host 5433 avoids conflict with a local Postgres (still 5432 internally)
+    volumes:
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fasttrans"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redpanda:
+    image: redpandadata/redpanda:v24.2.7
+    command:
+      - redpanda
+      - start
+      - --mode dev-container
+      - --smp 1
+      - --default-log-level=info
+      - --kafka-addr=PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    ports:
+      - "9092:9092"
+      - "9644:9644"                  # admin API
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Explicitly create topics (auto-create disabled). Runs once then exits.
+  redpanda-init:
+    image: redpandadata/redpanda:v24.2.7
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "/bootstrap.sh"]
+    volumes:
+      - ./infra/redpanda/bootstrap.sh:/bootstrap.sh:ro
+    restart: "no"
+
+volumes:
+  pgdata:
