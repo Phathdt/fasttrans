@@ -1,0 +1,182 @@
+openapi: 3.0.1
+info:
+  title: FastTrans API
+  version: 1.0.0
+servers:
+  - url: /
+tags:
+  - name: auth
+    description: Authentication
+  - name: transfers
+    description: Money transfers and the current user's accounts
+paths:
+  /api/auth/login:
+    post:
+      tags:
+        - auth
+      summary: Log in with username/password and receive a bearer token
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+  /api/transfers:
+    get:
+      tags:
+        - transfers
+      summary: List the current user's transfers, most recent first
+      operationId: list
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TransferResponse"
+    post:
+      tags:
+        - transfers
+      summary: Create a transfer (or idempotent replay)
+      operationId: create
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          description: Client-generated key; replays return the same transfer
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTransferRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/CreateTransferResponse"
+  /api/transfers/{id}:
+    get:
+      tags:
+        - transfers
+      summary: Get a single transfer by id
+      operationId: detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/TransferResponse"
+  /api/accounts:
+    get:
+      tags:
+        - transfers
+      summary: List the current user's accounts
+      operationId: accounts
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AccountResponse"
+components:
+  schemas:
+    LoginRequest:
+      required:
+        - password
+        - username
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        expiresIn:
+          type: integer
+          format: int64
+    CreateTransferRequest:
+      required:
+        - currency
+        - fromAccountRef
+        - toAccountRef
+      type: object
+      properties:
+        fromAccountRef:
+          type: string
+        toAccountRef:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        currency:
+          type: string
+    CreateTransferResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+    TransferResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        fromAccountRef:
+          type: string
+        toAccountRef:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        status:
+          type: string
+        reason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    AccountResponse:
+      type: object
+      properties:
+        accountRef:
+          type: string
+        ownerName:
+          type: string
+        balance:
+          type: integer
+          format: int64
+        currency:
+          type: string
