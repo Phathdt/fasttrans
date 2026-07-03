@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import 'tailwindcss';
+@plugin 'tailwindcss-animate';
+
+/* Enable dark mode via class (optional, defaults to light) */
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Design tokens for fintech: trustworthy neutral background + blue primary.
+  A single source of truth — shadcn reads through the CSS variables below.
+*/
+:root {
+  --radius: 0.625rem;
+
+  --background: oklch(0.985 0.002 247);      /* #F8FAFC slate-50 */
+  --foreground: oklch(0.279 0.041 260);      /* #1E293B slate-800 */
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.279 0.041 260);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.279 0.041 260);
+
+  --primary: oklch(0.546 0.215 262.8);       /* #2563EB blue-600 */
+  --primary-foreground: oklch(0.985 0 0);
+
+  --secondary: oklch(0.968 0.007 247.9);     /* slate-100 */
+  --secondary-foreground: oklch(0.372 0.041 257);
+
+  --muted: oklch(0.968 0.007 247.9);
+  --muted-foreground: oklch(0.554 0.041 257); /* slate-500 */
+
+  --accent: oklch(0.968 0.007 247.9);
+  --accent-foreground: oklch(0.372 0.041 257);
+
+  --destructive: oklch(0.577 0.245 27.3);    /* #DC2626 red-600 */
+  --destructive-foreground: oklch(0.985 0 0);
+
+  --success: oklch(0.627 0.17 149.2);        /* #16A34A green-600 */
+  --success-foreground: oklch(0.985 0 0);
+
+  --warning: oklch(0.681 0.162 61.6);        /* #D97706 amber-600 */
+  --warning-foreground: oklch(0.985 0 0);
+
+  --border: oklch(0.929 0.013 255.5);        /* slate-200 */
+  --input: oklch(0.929 0.013 255.5);
+  --ring: oklch(0.546 0.215 262.8);          /* primary blue for focus ring */
+}
+
+.dark {
+  --background: oklch(0.208 0.042 265.8);
+  --foreground: oklch(0.984 0.003 247.9);
+
+  --card: oklch(0.279 0.041 260);
+  --card-foreground: oklch(0.984 0.003 247.9);
+
+  --popover: oklch(0.279 0.041 260);
+  --popover-foreground: oklch(0.984 0.003 247.9);
+
+  --primary: oklch(0.623 0.19 259.8);
+  --primary-foreground: oklch(0.208 0.042 265.8);
+
+  --secondary: oklch(0.372 0.041 257);
+  --secondary-foreground: oklch(0.984 0.003 247.9);
+
+  --muted: oklch(0.372 0.041 257);
+  --muted-foreground: oklch(0.711 0.035 256.8);
+
+  --accent: oklch(0.372 0.041 257);
+  --accent-foreground: oklch(0.984 0.003 247.9);
+
+  --destructive: oklch(0.704 0.191 22.2);
+  --destructive-foreground: oklch(0.984 0.003 247.9);
+
+  --success: oklch(0.723 0.17 149.6);
+  --success-foreground: oklch(0.208 0.042 265.8);
+
+  --warning: oklch(0.769 0.16 70.1);
+  --warning-foreground: oklch(0.208 0.042 265.8);
+
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 18%);
+  --ring: oklch(0.623 0.19 259.8);
+}
+
+/* Map tokens to the Tailwind color scale for use via classes (bg-primary, text-muted-foreground...) */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    margin: 0;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Tabular figures for currency columns to prevent layout shift */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
