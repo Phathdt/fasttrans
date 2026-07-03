@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
+import type { AxiosError } from 'axios'
 import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react'
-import { getAccounts, createTransfer, type Account } from '@/api/client'
+import { useAccounts } from '@/api/generated/transfers/transfers'
+import type { AccountResponse, CreateTransferRequest, CreateTransferResponse } from '@/api/generated/models'
+import { customInstance } from '@/api/axios-instance'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,32 +25,60 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
+// createTransferWithKey is not generated with Idempotency-Key param, so call customInstance directly.
+function createTransferWithKey(
+  body: CreateTransferRequest,
+  idempotencyKey: string,
+): Promise<CreateTransferResponse> {
+  return customInstance<CreateTransferResponse>({
+    url: '/api/transfers',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Idempotency-Key': idempotencyKey,
+    },
+    data: body,
+  })
+}
+
 export default function CreateTransferPage() {
   const navigate = useNavigate()
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [loadingAccounts, setLoadingAccounts] = useState(true)
-  const [accountsError, setAccountsError] = useState<string | null>(null)
 
-  const [fromAccountRef, setFromAccountRef] = useState('')
+  const { data: accounts, isLoading: loadingAccounts, isError: accountsError } = useAccounts()
+
+  const [fromAccountRef, setFromAccountRef] = useState(() => '')
   const [toAccountRef, setToAccountRef] = useState('')
   const [amount, setAmount] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [pending, setPending] = useState(false)
 
   // Generated once; reused on retry so the idempotency key stays stable for this form session
   const [idempotencyKey] = useState<string>(() => crypto.randomUUID())
 
-  useEffect(() => {
-    getAccounts()
-      .then((accs) => {
-        setAccounts(accs)
-        if (accs.length > 0) setFromAccountRef(accs[0].accountRef)
-      })
-      .catch(() => setAccountsError('Failed to load accounts.'))
-      .finally(() => setLoadingAccounts(false))
-  }, [])
+  // Set default fromAccountRef once accounts load
+  const effectiveFrom =
+    fromAccountRef || (accounts && accounts.length > 0 ? (accounts[0].accountRef ?? '') : '')
 
-  async function handleSubmit(e: React.FormEvent) {
+  const { mutate, isPending } = useMutation({
+    mutationFn: (vars: { body: CreateTransferRequest; key: string }) =>
+      createTransferWithKey(vars.body, vars.key),
+    onSuccess: (res) => {
+      navigate(`/transfers/${res.id}`)
+    },
+    onError: (err: unknown) => {
+      const status = (err as AxiosError).response?.status
+      if (status === 403) {
+        setSubmitError('You do not own that source account (403).')
+      } else if (status === 503) {
+        setSubmitError('Account service unavailable. Please try again shortly.')
+      } else if (status === 400) {
+        setSubmitError('Bad request — check your inputs.')
+      } else {
+        setSubmitError('Transfer failed. Please try again.')
+      }
+    },
+  })
+
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitError(null)
     const parsedAmount = parseInt(amount, 10)
@@ -58,27 +90,15 @@ export default function CreateTransferPage() {
       setSubmitError('Amount must be a positive integer (minor units, e.g. 100000 = 1000 VND).')
       return
     }
-    setPending(true)
-    try {
-      const res = await createTransfer(
-        { fromAccountRef, toAccountRef: toAccountRef.trim(), amount: parsedAmount, currency: 'VND' },
-        idempotencyKey,
-      )
-      navigate(`/transfers/${res.id}`)
-    } catch (err) {
-      const status = (err as { status?: number }).status
-      if (status === 403) {
-        setSubmitError('You do not own that source account (403).')
-      } else if (status === 503) {
-        setSubmitError('Account service unavailable. Please try again shortly.')
-      } else if (status === 400) {
-        setSubmitError('Bad request — check your inputs.')
-      } else {
-        setSubmitError('Transfer failed. Please try again.')
-      }
-    } finally {
-      setPending(false)
-    }
+    mutate({
+      body: {
+        fromAccountRef: effectiveFrom,
+        toAccountRef: toAccountRef.trim(),
+        amount: parsedAmount,
+        currency: 'VND',
+      },
+      key: idempotencyKey,
+    })
   }
 
   // Preview the VND-formatted amount right below the input
@@ -117,7 +137,7 @@ export default function CreateTransferPage() {
                 className="flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
               >
                 <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
-                {accountsError}
+                Failed to load accounts.
               </p>
             )}
 
@@ -127,16 +147,20 @@ export default function CreateTransferPage() {
                   <Label htmlFor="from-account">
                     From account <span className="text-destructive">*</span>
                   </Label>
-                  <Select value={fromAccountRef} onValueChange={setFromAccountRef} required>
+                  <Select
+                    value={effectiveFrom}
+                    onValueChange={setFromAccountRef}
+                    required
+                  >
                     <SelectTrigger id="from-account" className="w-full">
                       <SelectValue placeholder="Select a source account" />
                     </SelectTrigger>
                     <SelectContent>
-                      {accounts.map((a) => (
-                        <SelectItem key={a.accountRef} value={a.accountRef}>
+                      {(accounts ?? []).map((a: AccountResponse) => (
+                        <SelectItem key={a.accountRef} value={a.accountRef ?? ''}>
                           <span className="font-mono">{a.accountRef}</span>
                           <span className="text-muted-foreground">· {a.ownerName}</span>
-                          <span className="ml-auto font-medium tabular-nums">{formatVnd(a.balance)}</span>
+                          <span className="ml-auto font-medium tabular-nums">{formatVnd(a.balance ?? 0)}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -204,13 +228,13 @@ export default function CreateTransferPage() {
                     type="button"
                     variant="outline"
                     onClick={() => navigate('/transfers')}
-                    disabled={pending}
+                    disabled={isPending}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={pending}>
-                    {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                    {pending ? 'Submitting…' : 'Submit transfer'}
+                  <Button type="submit" disabled={isPending}>
+                    {isPending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+                    {isPending ? 'Submitting…' : 'Submit transfer'}
                   </Button>
                 </div>
 

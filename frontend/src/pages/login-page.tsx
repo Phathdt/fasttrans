@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
+import type { AxiosError } from 'axios'
 import { AlertCircle, Loader2, Lock } from 'lucide-react'
-import { login } from '@/api/client'
+import { login } from '@/api/generated/auth/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,26 +20,28 @@ export default function LoginPage() {
   const [username, setUsername] = useState('alice')
   const [password, setPassword] = useState('password')
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
-    try {
-      const res = await login(username, password)
-      localStorage.setItem('token', res.token)
+  const { mutate, isPending } = useMutation({
+    mutationFn: (vars: { username: string; password: string }) =>
+      login({ username: vars.username, password: vars.password }),
+    onSuccess: (res) => {
+      localStorage.setItem('token', res.token ?? '')
       navigate('/transfers', { replace: true })
-    } catch (err) {
-      const status = (err as { status?: number }).status
+    },
+    onError: (err: unknown) => {
+      const status = (err as AxiosError).response?.status
       if (status === 401) {
         setError('Invalid username or password.')
       } else {
         setError('Login failed. Please try again.')
       }
-    } finally {
-      setLoading(false)
-    }
+    },
+  })
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    mutate({ username, password })
   }
 
   return (
@@ -99,9 +103,9 @@ export default function LoginPage() {
                 </p>
               )}
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                {loading ? 'Signing in…' : 'Sign in'}
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+                {isPending ? 'Signing in…' : 'Sign in'}
               </Button>
             </form>
           </CardContent>

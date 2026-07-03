@@ -1,10 +1,12 @@
 import { CheckCircle2, Clock, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Transfer } from '@/api/client'
 
 // Transfer status badge — uses color + icon + text (not color alone).
 // PENDING = amber, COMPLETED = green, FAILED = red.
-const STATUS_STYLES: Record<Transfer['status'], { className: string; Icon: typeof Clock }> = {
+// Status comes from the generated TransferResponse.status (string | undefined).
+type KnownStatus = 'PENDING' | 'COMPLETED' | 'FAILED'
+
+const STATUS_STYLES: Record<KnownStatus, { className: string; Icon: typeof Clock }> = {
   PENDING: {
     className: 'bg-warning/12 text-warning border-warning/30',
     Icon: Clock,
@@ -19,14 +21,20 @@ const STATUS_STYLES: Record<Transfer['status'], { className: string; Icon: typeo
   },
 }
 
+const FALLBACK_STYLE = {
+  className: 'bg-muted/50 text-muted-foreground border-muted',
+  Icon: Clock,
+}
+
 interface TransferStatusBadgeProps {
-  status: Transfer['status']
+  status: string
   className?: string
   size?: 'sm' | 'md'
 }
 
 export function TransferStatusBadge({ status, className, size = 'sm' }: TransferStatusBadgeProps) {
-  const { className: statusClass, Icon } = STATUS_STYLES[status]
+  const { className: statusClass, Icon } =
+    STATUS_STYLES[status as KnownStatus] ?? FALLBACK_STYLE
   return (
     <span
       className={cn(

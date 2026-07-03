@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react'
-import { getTransfer, type Transfer } from '@/api/client'
+import { useDetail } from '@/api/generated/transfers/transfers'
+import type { TransferResponse } from '@/api/generated/models'
 import { TransferStatusBadge } from '@/components/transfer-status-badge'
 import { formatDateTime, formatVnd } from '@/lib/format'
 import {
@@ -16,51 +17,32 @@ const MAX_POLL_ATTEMPTS = 20
 
 export default function TransferDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const [transfer, setTransfer] = useState<Transfer | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [timedOut, setTimedOut] = useState(false)
   const attemptRef = useRef(0)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [timedOut, setTimedOut] = useState(false)
 
-  function stopPolling() {
-    if (intervalRef.current !== null) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
-    }
-  }
+  const { data: transfer, isError, dataUpdatedAt } = useDetail(id!, {
+    query: {
+      enabled: !!id,
+      // Refetch every POLL_INTERVAL_MS while status is PENDING and under attempt limit.
+      refetchInterval: (query) => {
+        const data = query.state.data as TransferResponse | undefined
+        if (!data) return POLL_INTERVAL_MS
+        if (data.status !== 'PENDING') return false
+        if (attemptRef.current >= MAX_POLL_ATTEMPTS) return false
+        return POLL_INTERVAL_MS
+      },
+    },
+  })
 
+  // Count each successful server response; detect timeout after MAX_POLL_ATTEMPTS.
+  // dataUpdatedAt changes on every successful fetch, making this a reliable counter trigger.
   useEffect(() => {
-    if (!id) return
-
-    async function fetchTransfer() {
-      try {
-        const t = await getTransfer(id!)
-        setTransfer(t)
-        attemptRef.current += 1
-
-        if (t.status !== 'PENDING') {
-          stopPolling()
-          return
-        }
-
-        if (attemptRef.current >= MAX_POLL_ATTEMPTS) {
-          stopPolling()
-          setTimedOut(true)
-        }
-      } catch {
-        setError('Failed to load transfer.')
-        stopPolling()
-      }
+    if (!transfer || dataUpdatedAt === 0) return
+    attemptRef.current += 1
+    if (transfer.status === 'PENDING' && attemptRef.current >= MAX_POLL_ATTEMPTS) {
+      setTimedOut(true)
     }
-
-    // Initial load immediately
-    fetchTransfer()
-
-    // Then poll periodically
-    intervalRef.current = setInterval(fetchTransfer, POLL_INTERVAL_MS)
-
-    return () => stopPolling()
-  }, [id])
+  }, [dataUpdatedAt]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const isPolling = transfer?.status === 'PENDING' && !timedOut
 
@@ -75,20 +57,20 @@ export default function TransferDetailPage() {
           Back to list
         </Link>
 
-        {!transfer && !error && (
+        {!transfer && !isError && (
           <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
             <Loader2 className="size-5 animate-spin" aria-hidden="true" />
             <span>Loading transfer…</span>
           </div>
         )}
 
-        {error && (
+        {isError && (
           <p
             role="alert"
             className="flex items-center gap-2 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive"
           >
             <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
-            {error}
+            Failed to load transfer.
           </p>
         )}
 
@@ -98,11 +80,11 @@ export default function TransferDetailPage() {
               <div>
                 <CardTitle className="text-base font-medium text-muted-foreground">Transfer</CardTitle>
                 <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight">
-                  {formatVnd(transfer.amount)}
+                  {formatVnd(transfer.amount ?? 0)}
                 </p>
               </div>
               <div className="flex flex-col items-end gap-1.5">
-                <TransferStatusBadge status={transfer.status} size="md" />
+                <TransferStatusBadge status={transfer.status ?? 'PENDING'} size="md" />
                 {isPolling && (
                   <span
                     className="flex items-center gap-1 text-xs text-muted-foreground"
@@ -130,8 +112,8 @@ export default function TransferDetailPage() {
                 <DetailRow label="Transfer ID" value={<code className="font-mono text-sm break-all">{transfer.id}</code>} />
                 <DetailRow label="From" value={<span className="font-mono text-sm">{transfer.fromAccountRef}</span>} />
                 <DetailRow label="To" value={<span className="font-mono text-sm">{transfer.toAccountRef}</span>} />
-                <DetailRow label="Amount" value={<span className="font-medium tabular-nums">{formatVnd(transfer.amount)}</span>} />
-                <DetailRow label="Created" value={<span className="text-sm">{formatDateTime(transfer.createdAt)}</span>} />
+                <DetailRow label="Amount" value={<span className="font-medium tabular-nums">{formatVnd(transfer.amount ?? 0)}</span>} />
+                <DetailRow label="Created" value={<span className="text-sm">{formatDateTime(transfer.createdAt ?? '')}</span>} />
               </dl>
             </CardContent>
           </Card>
