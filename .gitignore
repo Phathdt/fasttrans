@@ -1,0 +1,23 @@
+# Plans (local working docs)
+plans
+
+# Java / Maven
+target/
+*.class
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+
+# Env & secrets
+.env
+*.local
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
