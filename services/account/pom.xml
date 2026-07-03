@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.4</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.fasttrans</groupId>
+  <artifactId>account-service</artifactId>
+  <version>1.0.0</version>
+  <name>account-service</name>
+
+  <properties>
+    <java.version>21</java.version>
+    <grpc.version>1.63.0</grpc.version>
+    <protobuf.version>3.25.3</protobuf.version>
+    <grpc-spring.version>3.1.0.RELEASE</grpc-spring.version>
+  </properties>
+
+  <dependencies>
+    <!-- Data JPA — entities + repositories -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <!-- WebFlux (reactive Netty) — only to serve the actuator health endpoint on port 8080.
+         We avoid spring-boot-starter-web (MVC) to not create REST infrastructure. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webflux</artifactId>
+    </dependency>
+    <!-- Actuator — health endpoint cho compose healthcheck -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <!-- Kafka consumer + producer (outbox relay) -->
+    <dependency>
+      <groupId>org.springframework.kafka</groupId>
+      <artifactId>spring-kafka</artifactId>
+    </dependency>
+
+    <!-- PostgreSQL driver -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <!-- Flyway core + PostgreSQL dialect -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+    </dependency>
+
+    <!-- gRPC server (net.devh) -->
+    <dependency>
+      <groupId>net.devh</groupId>
+      <artifactId>grpc-server-spring-boot-starter</artifactId>
+      <version>${grpc-spring.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-services</artifactId>
+      <version>${grpc.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-protobuf</artifactId>
+      <version>${grpc.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-stub</artifactId>
+      <version>${grpc.version}</version>
+    </dependency>
+    <!-- javax.annotation.Generated — required for generated code on Java 21 -->
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>annotations-api</artifactId>
+      <version>6.0.53</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <extensions>
+      <!-- Detects the OS to select the correct protoc binary -->
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.7.1</version>
+      </extension>
+    </extensions>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.xolstice.maven.plugins</groupId>
+        <artifactId>protobuf-maven-plugin</artifactId>
+        <version>0.6.1</version>
+        <configuration>
+          <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
+          <pluginId>grpc-java</pluginId>
+          <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>compile-custom</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
