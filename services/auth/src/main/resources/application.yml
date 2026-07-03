@@ -1,0 +1,36 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: auth-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/auth_db
+    username: ${DB_USER:fasttrans}
+    password: ${DB_PASSWORD:fasttrans}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+jwt:
+  # Demo secret; override via env JWT_SECRET. DO NOT use in production.
+  secret: ${JWT_SECRET:change-me-demo-secret-key-at-least-32-bytes-long!!}
+  ttl-seconds: 86400   # 24h — fixed in Validation Session 1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
