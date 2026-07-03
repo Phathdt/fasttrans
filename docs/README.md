@@ -4,12 +4,12 @@ Detailed docs per service, plus shared database, event, and gRPC contracts. Impl
 
 ## Services
 
-| Service | Doc | Interfaces |
-|---|---|---|
-| Auth | [services/auth-service.md](services/auth-service.md) | REST (login, verify) |
+| Service  | Doc                                                          | Interfaces                                                         |
+| -------- | ------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Auth     | [services/auth-service.md](services/auth-service.md)         | REST (login, verify)                                               |
 | Transfer | [services/transfer-service.md](services/transfer-service.md) | REST (transfers, accounts) · gRPC client · Kafka producer/consumer |
-| Account | [services/account-service.md](services/account-service.md) | gRPC server · Kafka consumer/producer (no REST) |
-| Frontend | [services/frontend.md](services/frontend.md) | React SPA via Traefik |
+| Account  | [services/account-service.md](services/account-service.md)   | gRPC server · Kafka consumer/producer (no REST)                    |
+| Frontend | [services/frontend.md](services/frontend.md)                 | React SPA via Traefik                                              |
 
 ## Shared contracts
 
@@ -36,8 +36,8 @@ Account  ──Redpanda transfer.result────▶ Transfer
 
 ## Per-service databases
 
-| Service | Database | Tables |
-|---|---|---|
-| Auth | `auth_db` | users |
+| Service  | Database      | Tables                                                       |
+| -------- | ------------- | ------------------------------------------------------------ |
+| Auth     | `auth_db`     | users                                                        |
 | Transfer | `transfer_db` | transfers (with idempotency_key), outbox, processed_messages |
-| Account | `account_db` | accounts, ledger_entries, processed_messages, outbox |
+| Account  | `account_db`  | accounts, ledger_entries, processed_messages, outbox         |

@@ -76,7 +76,7 @@ ListAccountsRequest  { string user_id; }
 ListAccountsResponse { repeated Account accounts; }
 Account { string account_ref; string owner_name; int64 balance; string currency; }
 ```
-Returns all accounts where `user_id` matches. Exposes `account_ref` (not the internal UUID). `balance` is `int64` minor units (VND: 1 = 1đ).
+Returns all accounts where `user_id` matches. Exposes `account_ref` (not the internal UUID). `balance` is `int64` minor units (VND: 1 = 1 dong).
 
 ## Events (Redpanda)
 

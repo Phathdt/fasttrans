@@ -2,7 +2,7 @@
 
 Source of truth for the two topics exchanged between transfer and account services. Both services generate DTOs from these definitions. JSON serialization (Spring Kafka `JsonSerializer`/`JsonDeserializer`, trusted packages configured).
 
-Every event carries a unique `messageId` (uuid) used for inbox dedup. Money fields are integers in minor units (VND: 1 = 1đ), mapped to `long` — no float precision loss. Accounts are referenced by their public `accountRef` (12-digit string), never the internal account UUID.
+Every event carries a unique `messageId` (uuid) used for inbox dedup. Money fields are integers in minor units (VND: 1 = 1 dong), mapped to `long` — no float precision loss. Accounts are referenced by their public `accountRef` (12-digit string), never the internal account UUID.
 
 ## Topic: transfer.requested
 
