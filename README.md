@@ -54,14 +54,14 @@ Money is stored as `bigint` in the smallest unit (VND: 1 = 1 dong). Accounts are
 
 ## API (qua Traefik `/api`)
 
-| Method | Path                  | Auth        | Description                             |
-| ------ | --------------------- | ----------- | --------------------------------------- |
-| POST   | `/api/auth/login`     | —           | `{username,password}` → `{token}`       |
-| GET    | `/api/auth/verify`    | Bearer      | ForwardAuth endpoint (internal)         |
-| GET    | `/api/accounts`       | ForwardAuth | list the user's accounts (gRPC)         |
+| Method | Path                  | Auth        | Description                                  |
+| ------ | --------------------- | ----------- | -------------------------------------------- |
+| POST   | `/api/auth/login`     | —           | `{username,password}` → `{token}`            |
+| GET    | `/api/auth/verify`    | Bearer      | ForwardAuth endpoint (internal)              |
+| GET    | `/api/accounts`       | ForwardAuth | list the user's accounts (gRPC)              |
 | POST   | `/api/transfers`      | ForwardAuth | create a transfer (`Idempotency-Key` header) |
-| GET    | `/api/transfers`      | ForwardAuth | list the user's transfers               |
-| GET    | `/api/transfers/{id}` | ForwardAuth | detail of a single transfer             |
+| GET    | `/api/transfers`      | ForwardAuth | list the user's transfers                    |
+| GET    | `/api/transfers/{id}` | ForwardAuth | detail of a single transfer                  |
 
 ## Contracts
 
