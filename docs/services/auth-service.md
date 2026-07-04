@@ -6,6 +6,44 @@ User authentication: login (JWT + Redis session) and token verification for Trae
 - Stack: Spring Boot (Web, Data JPA, Data Redis), Postgres `auth_db`, Redis, jjwt, BCrypt.
 - Port: HTTP 8080 (internal, exposed via Traefik).
 
+## Package Structure (Clean Architecture)
+
+```
+domain/
+  entities/
+    └─ User.java          (pure POJO: id, username, passwordHash)
+  interfaces/
+    ├─ UserRepository     (contract for user persistence)
+    ├─ TokenService       (contract for JWT generation/validation)
+    └─ SessionStore       (contract for session management)
+
+application/
+  dto/
+    ├─ LoginRequest.java
+    └─ LoginResponse.java
+  services/
+    └─ AuthService.java   (@Service, @Transactional, orchestrates login/verify logic)
+
+infrastructure/
+  web/
+    └─ AuthController.java (REST endpoints: POST /auth/login, GET /auth/verify)
+  security/
+    └─ JwtTokenService.java (implements TokenService, uses jjwt)
+  session/
+    └─ RedisSessionStore.java (implements SessionStore, uses RedisTemplate)
+  persistence/
+    ├─ UserJpaEntity.java  (JPA @Entity, maps to users table)
+    ├─ SpringDataUserRepository.java (Spring Data JpaRepository)
+    ├─ UserRepositoryImpl.java (implements domain UserRepository interface)
+    └─ UserMapper.java     (MapStruct: JpaEntity ↔ domain User)
+  config/
+    ├─ AppConfig.java     (Spring Bean config)
+    ├─ RedisConfig.java   (Redis template setup)
+    └─ JwtProperties.java  (JWT config properties)
+```
+
+**Dependency rule**: `infrastructure → application → domain`. Domain is framework-free (POJO User, plain interfaces). Enforced by ArchUnit.
+
 ## Database — auth_db
 
 ```sql

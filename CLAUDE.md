@@ -28,7 +28,13 @@ account  ──Redpanda transfer.result────▶ transfer
 | account  | `services/account`  | gRPC server + Kafka consumer/producer, no REST | `account_db` (accounts, ledger_entries, outbox, processed_messages) |
 | frontend | `frontend`          | React SPA served via Traefik                   | —                                                                   |
 
-Each Java service is a standalone Maven module (`com.fasttrans.*`, Java 21, Spring Boot 3.3.4). Package layout: `config`, `controller`, `dto`, `entity`, `grpc`, `kafka`, `repository`, `service`.
+Each Java service is a standalone Maven module (`com.fasttrans.*`, Java 21, Spring Boot 3.3.4). Package layout follows Clean Architecture / DDD with 3 layers:
+
+- **domain/** — `entities/` (pure POJO business objects), `interfaces/` (repository + external-service contracts), `exception/` (domain exceptions)
+- **application/** — `dto/` (request/response + event payload DTOs), `services/` (@Service orchestration, @Transactional boundary)
+- **infrastructure/** — grouped by tech: `web/` (REST controller), `grpc/` (server/client), `messaging/` (Kafka), `persistence/` (JpaEntity, SpringDataRepository, MapStruct), `config/`, `security/` (JWT), `session/` (Redis)
+
+Dependency rule enforced by ArchUnit: `infrastructure → application → domain`; domain is framework-free. See [CleanArchitectureTest](services/*/src/test/java/com/fasttrans/*/CleanArchitectureTest.java) in each service.
 
 ## Build & run
 

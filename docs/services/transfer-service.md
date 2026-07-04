@@ -7,6 +7,60 @@ Owns transfer lifecycle. Validates account ownership synchronously via gRPC, the
 - Port: HTTP 8080 (internal, via Traefik).
 - Patterns: API idempotency key, Transactional Outbox (produce), Inbox (consume).
 
+## Package Structure (Clean Architecture)
+
+```
+domain/
+  entities/
+    └─ Transfer.java      (pure POJO: id, userId, idempotencyKey, fromAccountRef, toAccountRef, amount, status, reason)
+  interfaces/
+    ├─ TransferRepository (contract for transfer persistence)
+    ├─ OutboxRepository   (contract for outbox persistence)
+    ├─ ProcessedMessageRepository (contract for dedup)
+    └─ AccountServiceClient (contract for gRPC account calls)
+  exception/
+    ├─ DomainException.java
+    └─ TransferException.java
+
+application/
+  dto/
+    ├─ CreateTransferRequest.java
+    ├─ CreateTransferResponse.java
+    ├─ TransferResponse.java
+    ├─ AccountResponse.java
+    └─ TransferRequestedEvent.java (Kafka event payload)
+  services/
+    ├─ TransferService.java (@Service, @Transactional, orchestrates create/get/list)
+    └─ OutboxRelayService.java (@Service, @Scheduled, polls outbox and publishes to Kafka)
+
+infrastructure/
+  web/
+    ├─ TransferController.java (REST: POST /transfers, GET /transfers, GET /accounts)
+    ├─ GlobalExceptionHandler.java (maps domain exceptions to HTTP status)
+  grpc/
+    └─ AccountServiceGrpcClient.java (implements AccountServiceClient, calls account:9090)
+  messaging/
+    ├─ TransferResultConsumer.java (Kafka consumer for transfer.result topic)
+    └─ OutboxRelayScheduler.java (scheduled relay for transfer.requested)
+  persistence/
+    ├─ TransferJpaEntity.java (JPA @Entity: transfers table)
+    ├─ OutboxJpaEntity.java (JPA @Entity: outbox table)
+    ├─ ProcessedMessageJpaEntity.java (JPA @Entity: processed_messages table)
+    ├─ SpringDataTransferRepository.java (Spring Data JpaRepository)
+    ├─ SpringDataOutboxRepository.java (Spring Data JpaRepository)
+    ├─ SpringDataProcessedMessageRepository.java (Spring Data JpaRepository)
+    ├─ TransferRepositoryImpl.java (implements domain TransferRepository)
+    ├─ OutboxRepositoryImpl.java (implements domain OutboxRepository)
+    ├─ ProcessedMessageRepositoryImpl.java (implements domain ProcessedMessageRepository)
+    ├─ TransferMapper.java (MapStruct: JpaEntity ↔ domain Transfer + DTO)
+  config/
+    ├─ GrpcClientConfig.java (gRPC channel setup)
+    ├─ KafkaProducerConfig.java (Kafka template setup)
+    └─ AppConfig.java
+```
+
+**Dependency rule**: `infrastructure → application → domain`. Domain is framework-free. Enforced by ArchUnit.
+
 ## Database — transfer_db
 
 ```sql

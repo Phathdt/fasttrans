@@ -7,6 +7,60 @@ Source of truth for accounts, balances, and the ledger. Hosts a gRPC server (own
 - Port: gRPC 9090 (internal). No HTTP.
 - Patterns: double-entry ledger, Inbox (consume), Transactional Outbox (produce).
 
+## Package Structure (Clean Architecture)
+
+```
+domain/
+  entities/
+    ├─ Account.java       (pure POJO: id, accountRef, userId, ownerName, balance, currency)
+    └─ LedgerEntry.java   (pure POJO: id, accountId, transferId, direction, amount, balanceAfter)
+  interfaces/
+    ├─ AccountRepository  (contract for account persistence)
+    ├─ LedgerRepository   (contract for ledger persistence)
+    ├─ OutboxRepository   (contract for outbox persistence)
+    └─ ProcessedMessageRepository (contract for dedup)
+  exception/
+    ├─ DomainException.java
+    └─ AccountException.java (ACCOUNT_NOT_FOUND, INSUFFICIENT_FUNDS, etc.)
+
+application/
+  dto/
+    ├─ AccountDto.java (accountRef, ownerName, balance, currency — for gRPC & REST proxy)
+    ├─ TransferRequestedEvent.java (Kafka event payload from transfer.requested)
+    └─ TransferResultEvent.java (Kafka event payload produced to transfer.result)
+  services/
+    ├─ AccountService.java (@Service, @Transactional, gRPC API + ledger queries)
+    └─ OutboxRelayService.java (@Service, @Scheduled, polls outbox and publishes transfer.result)
+
+infrastructure/
+  grpc/
+    ├─ AccountServiceImpl.java (implements gRPC service: ValidateOwnership, ListAccounts)
+    └─ GrpcServerConfig.java (gRPC server setup, port 9090)
+  messaging/
+    ├─ TransferRequestedConsumer.java (Kafka consumer for transfer.requested topic)
+    └─ OutboxRelayScheduler.java (scheduled relay for transfer.result)
+  persistence/
+    ├─ AccountJpaEntity.java (JPA @Entity: accounts table)
+    ├─ LedgerEntryJpaEntity.java (JPA @Entity: ledger_entries table)
+    ├─ OutboxJpaEntity.java (JPA @Entity: outbox table)
+    ├─ ProcessedMessageJpaEntity.java (JPA @Entity: processed_messages table)
+    ├─ SpringDataAccountRepository.java (Spring Data JpaRepository)
+    ├─ SpringDataLedgerRepository.java (Spring Data JpaRepository)
+    ├─ SpringDataOutboxRepository.java (Spring Data JpaRepository)
+    ├─ SpringDataProcessedMessageRepository.java (Spring Data JpaRepository)
+    ├─ AccountRepositoryImpl.java (implements domain AccountRepository)
+    ├─ LedgerRepositoryImpl.java (implements domain LedgerRepository)
+    ├─ OutboxRepositoryImpl.java (implements domain OutboxRepository)
+    ├─ ProcessedMessageRepositoryImpl.java (implements domain ProcessedMessageRepository)
+    ├─ AccountMapper.java (MapStruct: JpaEntity ↔ domain Account + DTO)
+    └─ LedgerMapper.java (MapStruct: JpaEntity ↔ domain LedgerEntry)
+  config/
+    ├─ KafkaConsumerConfig.java (Kafka consumer setup)
+    └─ AppConfig.java
+```
+
+**Dependency rule**: `infrastructure → application → domain`. Domain is framework-free. Enforced by ArchUnit.
+
 ## Database — account_db
 
 ```sql
