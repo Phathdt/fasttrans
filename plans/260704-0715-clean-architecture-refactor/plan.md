@@ -68,8 +68,8 @@ Tooling: **MapStruct** (mapper domain↔JPA, `componentModel="spring"`) + **Arch
 | Phase | Name | Status |
 |-------|------|--------|
 | 1 | [Foundation & Tooling](./phase-01-foundation-tooling.md) | Pending |
-| 2 | [Auth Service](./phase-02-auth-service.md) | Pending |
-| 3 | [Transfer Service](./phase-03-transfer-service.md) | Pending |
+| 2 | [Auth Service](./phase-02-auth-service.md) | ✅ Done |
+| 3 | [Transfer Service](./phase-03-transfer-service.md) | ✅ Done |
 | 4 | [Account Service](./phase-04-account-service.md) | ✅ Done |
 | 5 | [Enforcement & Docs](./phase-05-enforcement-docs.md) | Pending |
 

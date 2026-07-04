@@ -1,4 +1,4 @@
-package com.fasttrans.auth.entity;
+package com.fasttrans.auth.infrastructure.persistence;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,7 +10,7 @@ import java.util.UUID;
 // Pre-seeded user; does NOT hold account_id (1 user N accounts, ownership managed by the account service).
 @Entity
 @Table(name = "users")
-public class UserEntity {
+public class UserJpaEntity {
 
     @Id
     private UUID id;
@@ -21,7 +21,7 @@ public class UserEntity {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    protected UserEntity() {
+    protected UserJpaEntity() {
     }
 
     public UUID getId() {

@@ -1,4 +1,4 @@
-package com.fasttrans.auth.config;
+package com.fasttrans.auth.infrastructure.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

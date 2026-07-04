@@ -1,4 +1,4 @@
-package com.fasttrans.auth.dto;
+package com.fasttrans.auth.application.dto;
 
 import jakarta.validation.constraints.NotBlank;
 

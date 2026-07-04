@@ -1,8 +1,8 @@
-package com.fasttrans.auth.controller;
+package com.fasttrans.auth.infrastructure.web;
 
-import com.fasttrans.auth.dto.LoginRequest;
-import com.fasttrans.auth.dto.LoginResponse;
-import com.fasttrans.auth.service.AuthService;
+import com.fasttrans.auth.application.dto.LoginRequest;
+import com.fasttrans.auth.application.dto.LoginResponse;
+import com.fasttrans.auth.application.services.AuthService;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
