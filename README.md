@@ -4,23 +4,79 @@ A demo money-transfer system using event-driven messaging + synchronous gRPC. 3 
 
 ## Architecture overview
 
-```
-Browser (React/Vite)
-      │
-      ▼
-   Traefik ── ForwardAuth ──▶ auth /auth/verify (Redis session check)
-   │      │
-   ▼      ▼
- auth   transfer ── gRPC ValidateOwnership / ListAccounts ──▶ account (gRPC server + Kafka consumer)
-          │  ▲                                                   │
-   publish│  │ transfer.result                    transfer.requested │
-          ▼  │                                                   ▼
-        [ Redpanda ]  ◀──────────────────────────────────────────
+```mermaid
+flowchart LR
+    Browser["Browser (React/Vite)"] --> Traefik
+
+    subgraph gw[" "]
+        Traefik -- "ForwardAuth /auth/verify" --> auth["auth<br/>(REST + Redis session)"]
+    end
+
+    Traefik -- "/api/*" --> transfer["transfer<br/>(REST + gRPC client)"]
+    auth <--> Redis[("Redis<br/>sessions")]
+
+    transfer -- "gRPC ValidateOwnership / ListAccounts" --> account["account<br/>(gRPC server + Kafka)"]
+    transfer -- "publish transfer.requested" --> Redpanda{{Redpanda}}
+    Redpanda -- "transfer.requested" --> account
+    account -- "publish transfer.result" --> Redpanda
+    Redpanda -- "transfer.result" --> transfer
+
+    auth --> authdb[("auth_db")]
+    transfer --> transferdb[("transfer_db")]
+    account --> accountdb[("account_db")]
 ```
 
 - **gRPC (sync)**: transfer → account — validate ownership when creating a transfer + list accounts.
 - **Redpanda (async)**: transfer ↔ account — debit/credit + result (Transactional Outbox + Inbox dedup).
 - **Traefik ForwardAuth**: every request to transfer goes through auth `/auth/verify`, which injects `X-User-Id`.
+
+### Money transfer flow
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant T as transfer
+    participant A as account
+    participant R as Redpanda
+
+    C->>T: POST /api/transfers (Idempotency-Key)
+    T->>A: gRPC ValidateOwnership
+    A-->>T: owned = true
+    T->>T: persist transfer (PENDING) + outbox row (1 tx)
+    T-->>C: 201 PENDING
+    T->>R: relay transfer.requested (outbox)
+    R->>A: transfer.requested
+    A->>A: debit + credit + ledger + outbox (1 tx, locked)
+    A->>R: relay transfer.result (outbox)
+    R->>T: transfer.result
+    T->>T: update transfer COMPLETED/FAILED (inbox dedup)
+    C->>T: GET /api/transfers/{id} → COMPLETED
+```
+
+### Clean Architecture (per Java service)
+
+Each Java service (`auth`, `transfer`, `account`) follows a 3-layer Clean Architecture / DDD layout, enforced by ArchUnit (`infrastructure → application → domain`; domain is framework-free).
+
+```mermaid
+flowchart TD
+    subgraph infra["infrastructure/"]
+        web["web / grpc / messaging"]
+        persistence["persistence (JPA + MapStruct)"]
+        config["config / security / session"]
+    end
+    subgraph app["application/"]
+        services["services (@Service, @Transactional)"]
+        dto["dto"]
+    end
+    subgraph domain["domain/ (framework-free)"]
+        entities["entities"]
+        interfaces["interfaces (repo + client contracts)"]
+        exception["exception"]
+    end
+
+    infra --> app --> domain
+    persistence -. implements .-> interfaces
+```
 
 ## Run
 

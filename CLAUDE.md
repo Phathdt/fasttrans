@@ -8,11 +8,16 @@ FastTrans — a demo money-transfer system. Event-driven messaging (Redpanda/Kaf
 
 ## Architecture
 
-```
-Browser (React) → Traefik ──(ForwardAuth → auth /auth/verify)── /api/* → auth | transfer
-transfer ──gRPC (ValidateOwnership, ListAccounts)──▶ account
-transfer ──Redpanda transfer.requested──▶ account
-account  ──Redpanda transfer.result────▶ transfer
+```mermaid
+flowchart LR
+    Browser["Browser (React)"] --> Traefik
+    Traefik -- "ForwardAuth /auth/verify" --> auth
+    Traefik -- "/api/*" --> transfer
+    transfer -- "gRPC ValidateOwnership / ListAccounts" --> account
+    transfer -- "transfer.requested" --> Redpanda{{Redpanda}}
+    Redpanda -- "transfer.requested" --> account
+    account -- "transfer.result" --> Redpanda
+    Redpanda -- "transfer.result" --> transfer
 ```
 
 - **gRPC (sync)**: transfer → account for ownership validation + account listing.
