@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Entry point — Account Service.
- * Does not expose REST. gRPC server port 9090, actuator health port 8080.
+ * Exposes REST (accounts + lookup) on port 8080, gRPC server on port 9090, and Kafka consumer/producer.
  */
 @SpringBootApplication
 @EnableScheduling

@@ -8,7 +8,9 @@ tags:
   - name: auth
     description: Authentication
   - name: transfers
-    description: Money transfers and the current user's accounts
+    description: Money transfers
+  - name: accounts
+    description: Account listing and lookup for the current user
 paths:
   /auth/login:
     post:
@@ -92,9 +94,9 @@ paths:
   /accounts:
     get:
       tags:
-        - transfers
-      summary: List the current user's accounts
-      operationId: accounts
+        - accounts
+      summary: List the current user's accounts with balances
+      operationId: listAccounts
       responses:
         "200":
           description: OK
@@ -104,6 +106,25 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AccountResponse"
+  /accounts/{accountRef}:
+    get:
+      tags:
+        - accounts
+      summary: Look up an account by its public ref (no balance)
+      operationId: lookup
+      parameters:
+        - name: accountRef
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/AccountLookupResponse"
 components:
   schemas:
     LoginRequest:
@@ -179,4 +200,11 @@ components:
           type: integer
           format: int64
         currency:
+          type: string
+    AccountLookupResponse:
+      type: object
+      properties:
+        accountRef:
+          type: string
+        ownerName:
           type: string

@@ -1,5 +1,5 @@
 server:
-  port: 8080   # Netty (WebFlux) — only serves actuator health; no REST controller
+  port: 8080   # Tomcat (Spring MVC) — REST (accounts + lookup) + actuator health
 
 spring:
   application:

@@ -11,8 +11,6 @@ option java_outer_classname = "AccountProto";
 service AccountService {
   // Check whether account_ref belongs to user_id (ownership) before creating a transfer.
   rpc ValidateOwnership(ValidateOwnershipRequest) returns (ValidateOwnershipResponse);
-  // List all of the user's accounts (for GET /accounts on the transfer side).
-  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
 }
 
 message ValidateOwnershipRequest {
@@ -22,19 +20,4 @@ message ValidateOwnershipRequest {
 
 message ValidateOwnershipResponse {
   bool owned = 1;
-}
-
-message ListAccountsRequest {
-  string user_id = 1;
-}
-
-message ListAccountsResponse {
-  repeated Account accounts = 1;
-}
-
-message Account {
-  string account_ref = 1;
-  string owner_name = 2;
-  int64 balance = 3;   // minor units (VND: 1 = 1 dong)
-  string currency = 4;
 }

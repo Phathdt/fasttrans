@@ -31,11 +31,16 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
-    <!-- WebFlux (reactive Netty) — only to serve the actuator health endpoint on port 8080.
-         We avoid spring-boot-starter-web (MVC) to not create REST infrastructure. -->
+    <!-- Spring MVC / Tomcat — REST endpoints + actuator health on port 8080 -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-webflux</artifactId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <!-- OpenAPI 3 spec generation (exposes /v3/api-docs) -->
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+      <version>2.6.0</version>
     </dependency>
     <!-- Actuator — health endpoint cho compose healthcheck -->
     <dependency>

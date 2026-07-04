@@ -1,11 +1,8 @@
 package com.fasttrans.transfer.infrastructure.grpc;
 
 import com.fasttrans.account.grpc.AccountServiceGrpc;
-import com.fasttrans.account.grpc.ListAccountsRequest;
-import com.fasttrans.account.grpc.ListAccountsResponse;
 import com.fasttrans.account.grpc.ValidateOwnershipRequest;
 import com.fasttrans.account.grpc.ValidateOwnershipResponse;
-import com.fasttrans.transfer.domain.entities.AccountView;
 import com.fasttrans.transfer.domain.exception.AccountUnavailableException;
 import com.fasttrans.transfer.domain.interfaces.AccountClient;
 import io.grpc.Status;
@@ -13,7 +10,6 @@ import io.grpc.StatusRuntimeException;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -39,26 +35,6 @@ public class AccountGrpcClient implements AccountClient {
                             .setAccountRef(accountRef)
                             .build());
             return resp.getOwned();
-        } catch (StatusRuntimeException e) {
-            throw mapUnavailable(e);
-        }
-    }
-
-    @Override
-    public List<AccountView> listAccounts(String userId) {
-        try {
-            ListAccountsResponse response = stub
-                    .withDeadlineAfter(DEADLINE_SECONDS, TimeUnit.SECONDS)
-                    .listAccounts(ListAccountsRequest.newBuilder()
-                            .setUserId(userId)
-                            .build());
-            return response.getAccountsList().stream()
-                    .map(a -> new AccountView(
-                            a.getAccountRef(),
-                            a.getOwnerName(),
-                            a.getBalance(),
-                            a.getCurrency()))
-                    .toList();
         } catch (StatusRuntimeException e) {
             throw mapUnavailable(e);
         }

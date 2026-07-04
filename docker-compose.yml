@@ -79,9 +79,9 @@ services:
       start_period: 40s
     labels:
       - "traefik.enable=true"
-      # Route /transfers/* and /accounts → transfer service. cors BEFORE forward-auth so the
+      # Route /transfers/* → transfer service. cors BEFORE forward-auth so the
       # preflight OPTIONS (no Authorization header) is answered by Traefik instead of being 401'd.
-      - "traefik.http.routers.transfer.rule=PathPrefix(`/transfers`) || PathPrefix(`/accounts`)"
+      - "traefik.http.routers.transfer.rule=PathPrefix(`/transfers`)"
       - "traefik.http.routers.transfer.entrypoints=web"
       - "traefik.http.routers.transfer.middlewares=cors@docker,forward-auth@docker"
       - "traefik.http.services.transfer.loadbalancer.server.port=8080"
@@ -104,7 +104,14 @@ services:
       timeout: 5s
       retries: 12
       start_period: 60s
-    # gRPC port 9090 is exposed internally only (transfer → account); not routed through Traefik.
+    labels:
+      - "traefik.enable=true"
+      # Route /accounts/* → account service (REST). cors BEFORE forward-auth.
+      # gRPC port 9090 is exposed internally only (transfer → account); not routed through Traefik.
+      - "traefik.http.routers.account.rule=PathPrefix(`/accounts`)"
+      - "traefik.http.routers.account.entrypoints=web"
+      - "traefik.http.routers.account.middlewares=cors@docker,forward-auth@docker"
+      - "traefik.http.services.account.loadbalancer.server.port=8080"
 
   frontend:
     build: ./frontend

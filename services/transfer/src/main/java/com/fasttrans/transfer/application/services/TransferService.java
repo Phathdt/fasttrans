@@ -1,6 +1,5 @@
 package com.fasttrans.transfer.application.services;
 
-import com.fasttrans.transfer.application.dto.AccountResponse;
 import com.fasttrans.transfer.application.dto.CreateTransferRequest;
 import com.fasttrans.transfer.application.dto.TransferResponse;
 import com.fasttrans.transfer.application.dto.TransferResultEvent;
@@ -89,19 +88,6 @@ public class TransferService {
 
         log.info("Transfer created successfully transferId={}", transferId);
         return TransferResponse.from(transfer);
-    }
-
-    /**
-     * Proxy gRPC ListAccounts → the user's list of accounts.
-     */
-    public List<AccountResponse> listAccounts(UUID userId) {
-        return accountClient.listAccounts(userId.toString()).stream()
-                .map(a -> new AccountResponse(
-                        a.accountRef(),
-                        a.ownerName(),
-                        a.balance(),
-                        a.currency()))
-                .toList();
     }
 
     /**

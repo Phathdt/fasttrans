@@ -5,6 +5,7 @@ import com.fasttrans.account.domain.interfaces.AccountRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -30,5 +31,10 @@ public class AccountQueryService {
     /** All accounts of a user. Returns accountRef (public), not the internal UUID. */
     public List<Account> listAccounts(UUID userId) {
         return accountRepository.findByUserId(userId);
+    }
+
+    /** Lookup account by public ref for REST lookup endpoint. Empty when not found. */
+    public Optional<Account> lookup(String accountRef) {
+        return accountRepository.findByAccountRef(accountRef);
     }
 }

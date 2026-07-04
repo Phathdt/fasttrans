@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
 import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react'
-import { useAccounts } from '@/api/generated/transfers/transfers'
+import { useListAccounts, useLookup } from '@/api/generated/accounts/accounts'
 import type { AccountResponse, CreateTransferRequest, CreateTransferResponse } from '@/api/generated/models'
 import { customInstance } from '@/api/axios-instance'
 import { Button } from '@/components/ui/button'
@@ -44,7 +44,7 @@ function createTransferWithKey(
 export default function CreateTransferPage() {
   const navigate = useNavigate()
 
-  const { data: accounts, isLoading: loadingAccounts, isError: accountsError } = useAccounts()
+  const { data: accounts, isLoading: loadingAccounts, isError: accountsError } = useListAccounts()
 
   const [fromAccountRef, setFromAccountRef] = useState(() => '')
   const [toAccountRef, setToAccountRef] = useState('')
@@ -53,6 +53,21 @@ export default function CreateTransferPage() {
 
   // Generated once; reused on retry so the idempotency key stays stable for this form session
   const [idempotencyKey] = useState<string>(() => crypto.randomUUID())
+
+  // Destination account lookup — only fires when ref is exactly 12 characters
+  const trimmedTo = toAccountRef.trim()
+  const {
+    data: lookupData,
+    error: lookupError,
+    isFetching: lookupFetching,
+  } = useLookup(trimmedTo, {
+    query: {
+      enabled: trimmedTo.length === 12,
+      retry: false,
+    },
+  })
+  // Pre-computed booleans avoid leaking `unknown` into JSX && chains
+  const lookupIs404 = (lookupError as AxiosError | null)?.response?.status === 404
 
   // Set default fromAccountRef once accounts load
   const effectiveFrom =
@@ -181,9 +196,28 @@ export default function CreateTransferPage() {
                     required
                     className="font-mono"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    The reference number of the destination account.
-                  </p>
+                  {/* Destination account lookup feedback */}
+                  {lookupFetching && (
+                    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+                      Đang kiểm tra…
+                    </p>
+                  )}
+                  {!lookupFetching && lookupData != null && (
+                    <p className="text-xs text-green-600 dark:text-green-400">
+                      ✓ {lookupData.ownerName}
+                    </p>
+                  )}
+                  {!lookupFetching && lookupIs404 && (
+                    <p role="alert" className="text-xs text-destructive">
+                      Không tìm thấy tài khoản này
+                    </p>
+                  )}
+                  {!lookupFetching && lookupData == null && !lookupError && (
+                    <p className="text-xs text-muted-foreground">
+                      The reference number of the destination account.
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -232,7 +266,10 @@ export default function CreateTransferPage() {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isPending}>
+                  <Button
+                    type="submit"
+                    disabled={isPending || (trimmedTo.length === 12 && lookupIs404)}
+                  >
                     {isPending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
                     {isPending ? 'Submitting…' : 'Submit transfer'}
                   </Button>

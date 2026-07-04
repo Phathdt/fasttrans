@@ -1,6 +1,5 @@
 package com.fasttrans.transfer.infrastructure.web;
 
-import com.fasttrans.transfer.application.dto.AccountResponse;
 import com.fasttrans.transfer.application.dto.CreateTransferRequest;
 import com.fasttrans.transfer.application.dto.CreateTransferResponse;
 import com.fasttrans.transfer.application.dto.TransferResponse;
@@ -22,10 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.UUID;
 
-// Traefik strips /api before routing here; the controller is mounted at /transfers and /accounts.
+// Traefik strips /api before routing here; the controller is mounted at /transfers.
 // The X-User-Id header is injected by the gateway (ForwardAuth), so it is hidden from the public spec.
 @RestController
-@Tag(name = "transfers", description = "Money transfers and the current user's accounts")
+@Tag(name = "transfers", description = "Money transfers")
 public class TransferController {
 
     private final TransferService transferService;
@@ -75,14 +74,5 @@ public class TransferController {
             @Parameter(hidden = true) @RequestHeader("X-User-Id") String userIdHeader) {
         return transferService.detail(id, UUID.fromString(userIdHeader));
     }
-
-    /**
-     * GET /accounts — proxies to the account service via gRPC; lets the FE pick a fromAccountRef.
-     */
-    @Operation(summary = "List the current user's accounts")
-    @GetMapping("/accounts")
-    public List<AccountResponse> accounts(
-            @Parameter(hidden = true) @RequestHeader("X-User-Id") String userIdHeader) {
-        return transferService.listAccounts(UUID.fromString(userIdHeader));
-    }
 }
+

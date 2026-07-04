@@ -44,8 +44,8 @@ STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/accounts")
 [ "$STATUS" = "401" ] && green "GET /accounts no token → 401" \
                        || red "Expected 401, got $STATUS"
 
-# ── 3. gRPC ListAccounts ─────────────────────────────────────────────
-section "3. gRPC ListAccounts via GET /accounts"
+# ── 3. GET /accounts (account service) ──────────────────────────────
+section "3. GET /accounts (account service)"
 
 ALICE_ACCOUNTS=$(curl -sf "$BASE/accounts" \
   -H "Authorization: Bearer $ALICE_TOKEN")
@@ -64,6 +64,25 @@ BOB_ACCOUNTS=$(curl -sf "$BASE/accounts" \
 BOB_COUNT=$(echo "$BOB_ACCOUNTS" | jq 'length')
 [ "$BOB_COUNT" = "1" ] && green "bob has 1 account" \
                         || red "Expected 1, got $BOB_COUNT"
+
+# GET /accounts/{ref} — lookup by accountRef
+ALICE_REF="100000000001"
+LOOKUP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/accounts/$ALICE_REF" \
+  -H "Authorization: Bearer $ALICE_TOKEN")
+[ "$LOOKUP_STATUS" = "200" ] && green "GET /accounts/$ALICE_REF → 200" \
+                              || red "Expected 200, got $LOOKUP_STATUS"
+
+LOOKUP_BODY=$(curl -sf "$BASE/accounts/$ALICE_REF" \
+  -H "Authorization: Bearer $ALICE_TOKEN")
+OWNER_NAME=$(echo "$LOOKUP_BODY" | jq -r '.ownerName // empty')
+[ -n "$OWNER_NAME" ] && green "GET /accounts/$ALICE_REF has ownerName=$OWNER_NAME" \
+                      || red "GET /accounts/$ALICE_REF missing ownerName"
+
+MISSING_REF="999999999999"
+MISSING_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/accounts/$MISSING_REF" \
+  -H "Authorization: Bearer $ALICE_TOKEN")
+[ "$MISSING_STATUS" = "404" ] && green "GET /accounts/$MISSING_REF → 404" \
+                               || red "Expected 404, got $MISSING_STATUS"
 
 # ── 4. gRPC ValidateOwnership guard ──────────────────────────────────
 section "4. ValidateOwnership — alice uses bob's account → 403"

@@ -1,10 +1,7 @@
 package com.fasttrans.account.infrastructure.grpc;
 
 import com.fasttrans.account.application.services.AccountQueryService;
-import com.fasttrans.account.domain.entities.Account;
 import com.fasttrans.account.grpc.AccountServiceGrpc;
-import com.fasttrans.account.grpc.ListAccountsRequest;
-import com.fasttrans.account.grpc.ListAccountsResponse;
 import com.fasttrans.account.grpc.ValidateOwnershipRequest;
 import com.fasttrans.account.grpc.ValidateOwnershipResponse;
 import io.grpc.stub.StreamObserver;
@@ -12,12 +9,11 @@ import net.devh.boot.grpc.server.service.GrpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
- * gRPC server — ValidateOwnership + ListAccounts.
- * Read-only, delegates to AccountQueryService. Swallows errors → owned=false / empty list.
+ * gRPC server — ValidateOwnership only.
+ * Read-only, delegates to AccountQueryService. Swallows errors → owned=false.
  */
 @GrpcService
 public class AccountGrpcService extends AccountServiceGrpc.AccountServiceImplBase {
@@ -48,40 +44,6 @@ public class AccountGrpcService extends AccountServiceGrpc.AccountServiceImplBas
         }
 
         responseObserver.onNext(ValidateOwnershipResponse.newBuilder().setOwned(owned).build());
-        responseObserver.onCompleted();
-    }
-
-    /**
-     * Lists all accounts of userId.
-     * Returns accountRef (public), does NOT return the internal UUID.
-     */
-    @Override
-    public void listAccounts(ListAccountsRequest request,
-                             StreamObserver<ListAccountsResponse> responseObserver) {
-        List<Account> accounts;
-        try {
-            UUID userId = UUID.fromString(request.getUserId());
-            accounts = accountQueryService.listAccounts(userId);
-        } catch (Exception e) {
-            log.error("ListAccounts error userId={}: {}", request.getUserId(), e.getMessage());
-            responseObserver.onNext(ListAccountsResponse.newBuilder().build());
-            responseObserver.onCompleted();
-            return;
-        }
-
-        ListAccountsResponse.Builder responseBuilder = ListAccountsResponse.newBuilder();
-        for (Account account : accounts) {
-            responseBuilder.addAccounts(
-                    com.fasttrans.account.grpc.Account.newBuilder()
-                            .setAccountRef(account.getAccountRef())
-                            .setOwnerName(account.getOwnerName())
-                            .setBalance(account.getBalance())
-                            .setCurrency(account.getCurrency())
-                            .build()
-            );
-        }
-
-        responseObserver.onNext(responseBuilder.build());
         responseObserver.onCompleted();
     }
 }

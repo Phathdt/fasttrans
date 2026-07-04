@@ -24,7 +24,6 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  AccountResponse,
   CreateTransferRequest,
   CreateTransferResponse,
   TransferResponse
@@ -287,98 +286,6 @@ export function useDetail<TData = Awaited<ReturnType<typeof detail>>, TError = u
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getDetailQueryOptions(id,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-/**
- * @summary List the current user's accounts
- */
-export const accounts = (
-
- signal?: AbortSignal
-) => {
-
-
-      return customInstance<AccountResponse[]>(
-      {url: `/accounts`, method: 'GET', signal
-    },
-      );
-    }
-
-
-
-
-export const getAccountsQueryKey = () => {
-    return [
-    `/accounts`
-    ] as const;
-    }
-
-
-export const getAccountsQueryOptions = <TData = Awaited<ReturnType<typeof accounts>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accounts>>, TError, TData>>, }
-) => {
-
-const {query: queryOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getAccountsQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof accounts>>> = ({ signal }) => accounts(signal);
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof accounts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type AccountsQueryResult = NonNullable<Awaited<ReturnType<typeof accounts>>>
-export type AccountsQueryError = unknown
-
-
-export function useAccounts<TData = Awaited<ReturnType<typeof accounts>>, TError = unknown>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof accounts>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof accounts>>,
-          TError,
-          Awaited<ReturnType<typeof accounts>>
-        > , 'initialData'
-      >, }
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useAccounts<TData = Awaited<ReturnType<typeof accounts>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accounts>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof accounts>>,
-          TError,
-          Awaited<ReturnType<typeof accounts>>
-        > , 'initialData'
-      >, }
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useAccounts<TData = Awaited<ReturnType<typeof accounts>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accounts>>, TError, TData>>, }
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary List the current user's accounts
- */
-
-export function useAccounts<TData = Awaited<ReturnType<typeof accounts>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accounts>>, TError, TData>>, }
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getAccountsQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

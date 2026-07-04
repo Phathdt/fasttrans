@@ -37,8 +37,3 @@ export const DetailParams = zod.object({
 
 export const DetailResponse = zod.unknown()
 
-/**
- * @summary List the current user's accounts
- */
-export const AccountsResponse = zod.unknown()
-
