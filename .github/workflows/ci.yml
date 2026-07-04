@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref to save minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Backend: unit tests (Surefire, incl. ArchUnit layer checks) + integration
+  # tests (Failsafe, Testcontainers) + JaCoCo >=90% LINE gate, per service.
+  # `mvn verify` runs the whole chain; Docker is preinstalled on ubuntu-latest
+  # so Testcontainers (Postgres/Redpanda/Redis) works out of the box.
+  backend:
+    name: backend (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [auth, transfer, account]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Verify (unit + integration + coverage gate)
+        working-directory: services/${{ matrix.service }}
+        run: mvn --batch-mode --no-transfer-progress clean verify
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-${{ matrix.service }}
+          path: services/${{ matrix.service }}/target/site/jacoco-merged
+          if-no-files-found: ignore
+
+  # Frontend: TypeScript typecheck (tsc --noEmit acts as the lint gate — no
+  # ESLint configured) + production build.
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit
+
+      - name: Build
+        run: pnpm build
