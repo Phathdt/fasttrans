@@ -175,6 +175,21 @@ docker compose exec postgres psql -U fasttrans -d account_db \
       GROUP BY a.id, a.account_ref, a.balance;"
 ```
 
+## Testing & CI
+
+Each Java service ships unit tests (`*Test`, Surefire — includes ArchUnit layer checks) and integration tests (`*IT`, Failsafe — Testcontainers: Postgres/Redpanda/Redis). A JaCoCo gate enforces **≥90% LINE** coverage per service at `mvn verify` (current: auth 97.3%, transfer 99.1%, account 95.4%).
+
+```bash
+# From a service dir (services/auth|transfer|account) — Docker required for *IT
+mvn clean verify              # unit + integration + coverage gate
+mvn verify -DskipITs          # fast, unit-only (no Docker)
+```
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to `main`:
+
+- **backend** (matrix: auth, transfer, account) — `mvn verify` (unit + integration + coverage gate); Testcontainers uses the Docker preinstalled on `ubuntu-latest`.
+- **frontend** — `tsc --noEmit` typecheck (no ESLint configured) + `pnpm build`.
+
 ## Troubleshooting
 
 **Redpanda not healthy at boot:** `redpanda-init` waits for `service_healthy` — if topic creation fails, rerun it:
