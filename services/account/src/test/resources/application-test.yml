@@ -1,0 +1,23 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  kafka:
+    bootstrap-servers: localhost:9092   # overridden by AbstractKafkaIT @DynamicPropertySource
+
+grpc:
+  server:
+    port: -1   # random port; in-process tests bypass the network entirely
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

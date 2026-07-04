@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/transfer_db_test
+    username: test
+    password: test
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  kafka:
+    bootstrap-servers: localhost:9092
+
+grpc:
+  client:
+    account:
+      address: in-process:test-account
+      negotiation-type: plaintext
+
+# Prevent OutboxRelay @Scheduled from firing automatically during integration tests
+# Tests that need the relay will call relay() directly.
+spring.task.scheduling.pool.size: 1

@@ -1,0 +1,12 @@
+spring:
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+
+jwt:
+  secret: test-secret-for-integration-tests-at-least-32bytes!!
+  ttl-seconds: 3600

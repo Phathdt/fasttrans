@@ -23,7 +23,22 @@
     <grpc-spring.version>3.1.0.RELEASE</grpc-spring.version>
     <mapstruct.version>1.6.3</mapstruct.version>
     <archunit.version>1.3.0</archunit.version>
+    <jacoco.version>0.8.12</jacoco.version>
+    <testcontainers.version>1.21.3</testcontainers.version>
+    <coverage.line.min>0.90</coverage.line.min>
   </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -104,7 +119,7 @@
       <version>${mapstruct.version}</version>
     </dependency>
 
-    <!-- Test: JUnit + ArchUnit (enforce clean-architecture dependency rule) -->
+    <!-- Test: JUnit + Mockito + AssertJ via spring-boot-starter-test -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
@@ -114,6 +129,41 @@
       <groupId>com.tngtech.archunit</groupId>
       <artifactId>archunit-junit5</artifactId>
       <version>${archunit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- Testcontainers -->
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>redpanda</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- Async assertion (Kafka IT) -->
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- gRPC in-process testing -->
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-testing</artifactId>
+      <version>${grpc.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- Spring Kafka test utilities -->
+    <dependency>
+      <groupId>org.springframework.kafka</groupId>
+      <artifactId>spring-kafka-test</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -164,6 +214,183 @@
           </execution>
         </executions>
       </plugin>
+
+      <!-- Surefire: unit tests only (*Test.java, exclude *IT.java) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>**/*Test.java</include>
+          </includes>
+          <excludes>
+            <exclude>**/*IT.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <!-- Failsafe: integration tests (*IT.java) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>**/*IT.java</include>
+          </includes>
+          <!-- ${argLine} preserves the JaCoCo agent set by prepare-agent-integration.
+               -Dapi.version=1.44 is the docker-java system property that overrides the
+               hardcoded 1.32 API version so Docker Engine 29 (minimum 1.44) accepts the connection. -->
+          <argLine>${argLine} -Dapi.version=1.44</argLine>
+          <environmentVariables>
+            <DOCKER_HOST>unix:///var/run/docker.sock</DOCKER_HOST>
+            <TESTCONTAINERS_RYUK_DISABLED>true</TESTCONTAINERS_RYUK_DISABLED>
+          </environmentVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- JaCoCo: unit + IT coverage, merge, report, 90% LINE gate -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <!-- Instrument unit tests -->
+          <execution>
+            <id>prepare-agent</id>
+            <goals><goal>prepare-agent</goal></goals>
+            <configuration>
+              <destFile>${project.build.directory}/jacoco.exec</destFile>
+            </configuration>
+          </execution>
+          <!-- Instrument integration tests -->
+          <execution>
+            <id>prepare-agent-integration</id>
+            <goals><goal>prepare-agent-integration</goal></goals>
+            <configuration>
+              <destFile>${project.build.directory}/jacoco-it.exec</destFile>
+            </configuration>
+          </execution>
+          <!-- Merge unit + IT exec files -->
+          <execution>
+            <id>merge</id>
+            <phase>verify</phase>
+            <goals><goal>merge</goal></goals>
+            <configuration>
+              <fileSets>
+                <fileSet>
+                  <directory>${project.build.directory}</directory>
+                  <includes>
+                    <include>jacoco.exec</include>
+                    <include>jacoco-it.exec</include>
+                  </includes>
+                </fileSet>
+              </fileSets>
+              <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
+            </configuration>
+          </execution>
+          <!-- Report from merged -->
+          <execution>
+            <id>report</id>
+            <phase>verify</phase>
+            <goals><goal>report</goal></goals>
+            <configuration>
+              <dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+              <outputDirectory>${project.reporting.outputDirectory}/jacoco-merged</outputDirectory>
+              <excludes>
+                <!-- Proto-generated gRPC stubs -->
+                <exclude>com/fasttrans/account/grpc/**</exclude>
+                <!-- MapStruct generated implementations -->
+                <exclude>**/*MapperImpl.*</exclude>
+                <!-- Main application class -->
+                <exclude>**/*Application.*</exclude>
+                <!-- Pure config / binding classes -->
+                <exclude>**/config/**</exclude>
+                <!-- DTO records (no logic) -->
+                <exclude>**/application/dto/**</exclude>
+                <!-- JPA entity POJOs (no logic) -->
+                <exclude>**/*JpaEntity.*</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+          <!-- Coverage gate: fail if LINE < 90% -->
+          <execution>
+            <id>check</id>
+            <phase>verify</phase>
+            <goals><goal>check</goal></goals>
+            <configuration>
+              <dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+              <rules>
+                <rule>
+                  <element>BUNDLE</element>
+                  <limits>
+                    <limit>
+                      <counter>LINE</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>${coverage.line.min}</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+              <excludes>
+                <!-- Proto-generated gRPC stubs -->
+                <exclude>com/fasttrans/account/grpc/**</exclude>
+                <!-- MapStruct generated implementations -->
+                <exclude>**/*MapperImpl.*</exclude>
+                <!-- Main application class -->
+                <exclude>**/*Application.*</exclude>
+                <!-- Pure config / binding classes -->
+                <exclude>**/config/**</exclude>
+                <!-- DTO records (no logic) -->
+                <exclude>**/application/dto/**</exclude>
+                <!-- JPA entity POJOs (no logic) -->
+                <exclude>**/*JpaEntity.*</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- Skip integration tests when Docker is not available: mvn verify -DskipITs -->
+    <profile>
+      <id>skip-it</id>
+      <activation>
+        <property>
+          <name>skipITs</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>${jacoco.version}</version>
+            <executions>
+              <execution>
+                <id>prepare-agent-integration</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

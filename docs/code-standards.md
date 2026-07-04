@@ -185,10 +185,21 @@ com.fasttrans.{service}/
 
 ### Testing
 
-- **ArchUnit**: Enforces 3-layer dependency rules; runs in CI/CD
-- **Unit tests**: Test domain entities + application services without Spring (mock repositories)
-- **Integration tests**: Full Spring context, use test DBs + embedded Kafka
+- **ArchUnit**: Enforces 3-layer dependency rules (`CleanArchitectureTest` per service)
+- **Unit tests** (`*Test`, Surefire): Test domain entities + application services without Spring (mock repositories via Mockito); controllers via `@WebMvcTest`
+- **Integration tests** (`*IT`, Failsafe): Testcontainers-backed. Persistence via `@DataJpaTest` + `@AutoConfigureTestDatabase(replace=NONE)`; messaging/gRPC via `@SpringBootTest`
 - **E2E tests**: Docker Compose + bash script; smoke-test all API endpoints
+
+#### Coverage & tooling
+
+- **JaCoCo gate**: ≥90% LINE per service, enforced at `mvn verify` (merged unit + integration exec). Build fails below threshold.
+- **Excluded from coverage**: generated gRPC stubs (`**/grpc/**`), MapStruct `*MapperImpl`, `*Application`, `**/config/**`, `**/application/dto/**`, `*JpaEntity`. Domain entities are NOT excluded.
+- **Testcontainers images**: `postgres:16-alpine`, `redpandadata/redpanda:v24.2.7` (Redpanda, not plain Kafka), `redis:7-alpine`. Singleton container pattern per base class in `support/`.
+- **Run**: `mvn clean verify` from a service dir (requires Docker running). Fast unit-only run without Docker: `mvn verify -DskipITs`.
+- **Coverage report**: `target/site/jacoco-merged/index.html` per service.
+- **Docker Engine 29+ note**: Failsafe pins `-Dapi.version=1.44` (docker-java system property) + `TESTCONTAINERS_RYUK_DISABLED=true`; the `${argLine}` prefix is required to keep the JaCoCo agent.
+
+Current coverage: auth 97.3%, transfer 99.1%, account 95.4% LINE.
 
 ## Money & Numbers
 
@@ -227,7 +238,8 @@ com.fasttrans.{service}/
 - [ ] Exceptions thrown are domain-specific (not generic RuntimeException)
 - [ ] Mappers used for entity ↔ DTO conversion (no manual assignment loops)
 - [ ] Database changes require migration file (Flyway V*__*.sql)
-- [ ] Tests added for new domain logic or API endpoints
+- [ ] Tests added for new domain logic or API endpoints (unit `*Test` and/or integration `*IT`)
+- [ ] `mvn clean verify` passes with JaCoCo ≥90% LINE (Docker required for `*IT`)
 - [ ] ArchUnit tests pass (if service modified): `mvn test -Dtest=CleanArchitectureTest`
 - [ ] No hardcoded secrets or sensitive values
 - [ ] Naming follows conventions (camelCase, snake_case, PascalCase per context)
