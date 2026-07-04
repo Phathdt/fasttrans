@@ -1,20 +1,20 @@
 import axios, { type AxiosRequestConfig } from 'axios'
 
 // Single axios instance shared across all generated API calls.
-// baseURL is '' so that paths like /api/auth/login are used as-is,
-// matching the Vite dev proxy and production nginx setup.
+// The SPA is a separate origin (localhost:3000) and calls Traefik cross-origin.
+// baseURL comes from VITE_API_BASE_URL, defaulting to the Traefik host port.
 export const AXIOS_INSTANCE = axios.create({
-  baseURL: '',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000',
   headers: {
     'Content-Type': 'application/json',
   },
 })
 
-// Attach Bearer token from localStorage for every request except /api/auth/login
+// Attach Bearer token from localStorage for every request except /auth/login
 AXIOS_INSTANCE.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   const url = config.url ?? ''
-  if (token && !url.includes('/api/auth/login')) {
+  if (token && !url.includes('/auth/login')) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config

@@ -34,7 +34,7 @@ export const login = (
 
 
       return customInstance<LoginResponse>(
-      {url: `/api/auth/login`, method: 'POST',
+      {url: `/auth/login`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: loginRequest, signal
     },

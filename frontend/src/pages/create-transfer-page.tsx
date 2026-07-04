@@ -31,7 +31,7 @@ function createTransferWithKey(
   idempotencyKey: string,
 ): Promise<CreateTransferResponse> {
   return customInstance<CreateTransferResponse>({
-    url: '/api/transfers',
+    url: '/transfers',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

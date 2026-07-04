@@ -60,7 +60,7 @@ export const list = (
 
 
       return customInstance<TransferResponse[]>(
-      {url: `/api/transfers`, method: 'GET', signal
+      {url: `/transfers`, method: 'GET', signal
     },
       );
     }
@@ -70,7 +70,7 @@ export const list = (
 
 export const getListQueryKey = () => {
     return [
-    `/api/transfers`
+    `/transfers`
     ] as const;
     }
 
@@ -152,7 +152,7 @@ export const create = (
 
 
       return customInstance<CreateTransferResponse>(
-      {url: `/api/transfers`, method: 'POST',
+      {url: `/transfers`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: createTransferRequest, signal
     },
@@ -216,7 +216,7 @@ export const detail = (
 
 
       return customInstance<TransferResponse>(
-      {url: `/api/transfers/${id}`, method: 'GET', signal
+      {url: `/transfers/${id}`, method: 'GET', signal
     },
       );
     }
@@ -226,7 +226,7 @@ export const detail = (
 
 export const getDetailQueryKey = (id: string,) => {
     return [
-    `/api/transfers/${id}`
+    `/transfers/${id}`
     ] as const;
     }
 
@@ -308,7 +308,7 @@ export const accounts = (
 
 
       return customInstance<AccountResponse[]>(
-      {url: `/api/accounts`, method: 'GET', signal
+      {url: `/accounts`, method: 'GET', signal
     },
       );
     }
@@ -318,7 +318,7 @@ export const accounts = (
 
 export const getAccountsQueryKey = () => {
     return [
-    `/api/accounts`
+    `/accounts`
     ] as const;
     }
 

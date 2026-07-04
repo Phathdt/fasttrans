@@ -3,7 +3,7 @@
  * merge-openapi.mjs
  *
  * Merges two OpenAPI 3.x JSON specs (auth + transfer) into a single document,
- * prefixes every path with /api, and writes docs/openapi.yaml.
+ * and writes docs/openapi.yaml. Paths are kept as-is (no /api prefix).
  *
  * Usage:
  *   node scripts/merge-openapi.mjs <auth-spec.json> <transfer-spec.json>
@@ -30,23 +30,11 @@ if (!authPath || !transferPath) usage();
 const authSpec = JSON.parse(readFileSync(resolve(authPath), 'utf8'));
 const transferSpec = JSON.parse(readFileSync(resolve(transferPath), 'utf8'));
 
-/**
- * Prefix every top-level path key with /api.
- * Idempotent: already-prefixed keys are skipped.
- */
-function prefixPaths(paths) {
-  const result = {};
-  for (const [key, value] of Object.entries(paths ?? {})) {
-    const newKey = key.startsWith('/api') ? key : `/api${key}`;
-    result[newKey] = value;
-  }
-  return result;
-}
-
 // Merge paths and component schemas from both specs.
+// Paths are used as-is — the FE calls Traefik directly (no /api prefix).
 const mergedPaths = {
-  ...prefixPaths(authSpec.paths),
-  ...prefixPaths(transferSpec.paths),
+  ...(authSpec.paths ?? {}),
+  ...(transferSpec.paths ?? {}),
 };
 
 const mergedSchemas = {

@@ -8,7 +8,7 @@ services:
       - --entrypoints.web.address=:80
       - --api.insecure=true          # dashboard demo only
     ports:
-      - "80:80"
+      - "4000:80"                    # host 4000 → Traefik :80 (avoids conflict with a local :80)
       - "8081:8080"                  # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -40,12 +40,18 @@ services:
       start_period: 40s
     labels:
       - "traefik.enable=true"
-      # Route /api/auth/* (no ForwardAuth). Strip /api → controller mounts at /auth.
-      - "traefik.http.routers.auth.rule=PathPrefix(`/api/auth`)"
+      # Route /auth/* (no ForwardAuth). Controller mounts at /auth; no prefix strip needed.
+      - "traefik.http.routers.auth.rule=PathPrefix(`/auth`)"
       - "traefik.http.routers.auth.entrypoints=web"
-      - "traefik.http.routers.auth.middlewares=strip-api@docker"
-      - "traefik.http.middlewares.strip-api.stripprefix.prefixes=/api"
-      # Define the forward-auth middleware here (shared; transfer references it in Phase 5).
+      - "traefik.http.routers.auth.middlewares=cors@docker"
+      # Shared CORS middleware — FE origin is a separate host (localhost:3000).
+      # Traefik answers the preflight OPTIONS itself, so it must sit BEFORE forward-auth
+      # (a preflight carries no Authorization header and would otherwise 401).
+      - "traefik.http.middlewares.cors.headers.accessControlAllowOriginList=http://localhost:3000"
+      - "traefik.http.middlewares.cors.headers.accessControlAllowMethods=GET,POST,OPTIONS"
+      - "traefik.http.middlewares.cors.headers.accessControlAllowHeaders=Authorization,Content-Type,Idempotency-Key"
+      - "traefik.http.middlewares.cors.headers.accessControlMaxAge=3600"
+      # Shared forward-auth middleware (transfer references it below).
       - "traefik.http.middlewares.forward-auth.forwardauth.address=http://auth:8080/auth/verify"
       - "traefik.http.middlewares.forward-auth.forwardauth.authResponseHeaders=X-User-Id"
       - "traefik.http.services.auth.loadbalancer.server.port=8080"
@@ -73,10 +79,11 @@ services:
       start_period: 40s
     labels:
       - "traefik.enable=true"
-      # Route /api/transfers/* and /api/accounts → transfer service, after ForwardAuth + strip /api
-      - "traefik.http.routers.transfer.rule=PathPrefix(`/api/transfers`) || PathPrefix(`/api/accounts`)"
+      # Route /transfers/* and /accounts → transfer service. cors BEFORE forward-auth so the
+      # preflight OPTIONS (no Authorization header) is answered by Traefik instead of being 401'd.
+      - "traefik.http.routers.transfer.rule=PathPrefix(`/transfers`) || PathPrefix(`/accounts`)"
       - "traefik.http.routers.transfer.entrypoints=web"
-      - "traefik.http.routers.transfer.middlewares=strip-api@docker,forward-auth@docker"
+      - "traefik.http.routers.transfer.middlewares=cors@docker,forward-auth@docker"
       - "traefik.http.services.transfer.loadbalancer.server.port=8080"
 
   account:
@@ -101,15 +108,9 @@ services:
 
   frontend:
     build: ./frontend
-    depends_on:
-      - traefik
-    labels:
-      - "traefik.enable=true"
-      # Route / → FE (priority 1 — lower than /api routes' default priority 2+)
-      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.frontend.entrypoints=web"
-      - "traefik.http.routers.frontend.priority=1"
-      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+    ports:
+      - "3000:80"   # FE served directly by its own nginx; calls the API cross-origin at :4000
+    # Not routed through Traefik — the SPA is a separate origin (localhost:3000).
 
   # ─────────────────────────── Datastores ───────────────────────────
   postgres:
@@ -119,7 +120,7 @@ services:
       POSTGRES_PASSWORD: fasttrans
       POSTGRES_DB: postgres
     ports:
-      - "5433:5432"   # host 5433 avoids conflict with a local Postgres (still 5432 internally)
+      - "15432:5432"   # host 15432 avoids conflict with a local Postgres (still 5432 internally)
     volumes:
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
       - pgdata:/var/lib/postgresql/data
@@ -148,9 +149,9 @@ services:
       - --smp 1
       - --default-log-level=info
       - --kafka-addr=PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
-      - --advertise-kafka-addr=PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:29092,OUTSIDE://localhost:19092
     ports:
-      - "9092:9092"
+      - "19092:9092"                 # host 19092 → Redpanda :9092 (Kafka API for host clients)
       - "9644:9644"                  # admin API
     healthcheck:
       test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]

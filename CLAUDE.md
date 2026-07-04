@@ -10,9 +10,10 @@ FastTrans — a demo money-transfer system. Event-driven messaging (Redpanda/Kaf
 
 ```mermaid
 flowchart LR
-    Browser["Browser (React)"] --> Traefik
+    Browser["Browser (React)"] -- "load SPA :3000" --> FE["frontend (nginx)"]
+    Browser -- "API :4000 (CORS)" --> Traefik
     Traefik -- "ForwardAuth /auth/verify" --> auth
-    Traefik -- "/api/*" --> transfer
+    Traefik -- "/transfers, /accounts" --> transfer
     transfer -- "gRPC ValidateOwnership / ListAccounts" --> account
     transfer -- "transfer.requested" --> Redpanda{{Redpanda}}
     Redpanda -- "transfer.requested" --> account
@@ -20,6 +21,7 @@ flowchart LR
     Redpanda -- "transfer.result" --> transfer
 ```
 
+- **Frontend origin**: SPA served by its own nginx on `:3000`, calls the API cross-origin at Traefik `:4000`. Traefik applies a `cors` middleware (before `forward-auth`) so preflight `OPTIONS` succeeds without a token. No `/api` prefix — paths are `/auth`, `/transfers`, `/accounts`.
 - **gRPC (sync)**: transfer → account for ownership validation + account listing.
 - **Redpanda (async)**: debit/credit + result, using Transactional Outbox (produce) + Inbox dedup (consume) on both sides.
 - **Traefik ForwardAuth**: every transfer request passes through auth `/auth/verify` (Redis session check), which injects `X-User-Id`.
@@ -31,7 +33,7 @@ flowchart LR
 | auth     | `services/auth`     | REST (login, verify) + Redis sessions          | `auth_db` (users)                                                   |
 | transfer | `services/transfer` | REST + gRPC client + Kafka producer/consumer   | `transfer_db` (transfers, outbox, processed_messages)               |
 | account  | `services/account`  | gRPC server + Kafka consumer/producer, no REST | `account_db` (accounts, ledger_entries, outbox, processed_messages) |
-| frontend | `frontend`          | React SPA served via Traefik                   | —                                                                   |
+| frontend | `frontend`          | React SPA served by its own nginx (`:3000`)    | —                                                                   |
 
 Each Java service is a standalone Maven module (`com.fasttrans.*`, Java 21, Spring Boot 3.3.4). Package layout follows Clean Architecture / DDD with 3 layers:
 

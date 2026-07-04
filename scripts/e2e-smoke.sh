@@ -4,7 +4,7 @@
 # Usage: bash scripts/e2e-smoke.sh
 set -euo pipefail
 
-BASE="http://localhost"
+BASE="http://localhost:4000"
 PASS=0
 FAIL=0
 
@@ -23,12 +23,12 @@ require curl jq
 # ── 1. Auth ──────────────────────────────────────────────────────────
 section "1. Login"
 
-ALICE_TOKEN=$(curl -sf -X POST "$BASE/api/auth/login" \
+ALICE_TOKEN=$(curl -sf -X POST "$BASE/auth/login" \
   -H "Content-Type: application/json" \
   -d '{"username":"alice","password":"password"}' | jq -r '.token')
 [ -n "$ALICE_TOKEN" ] && green "alice login OK" || { red "alice login FAILED"; exit 1; }
 
-BOB_TOKEN=$(curl -sf -X POST "$BASE/api/auth/login" \
+BOB_TOKEN=$(curl -sf -X POST "$BASE/auth/login" \
   -H "Content-Type: application/json" \
   -d '{"username":"bob","password":"password"}' | jq -r '.token')
 [ -n "$BOB_TOKEN" ] && green "bob login OK" || { red "bob login FAILED"; exit 1; }
@@ -36,18 +36,18 @@ BOB_TOKEN=$(curl -sf -X POST "$BASE/api/auth/login" \
 # ── 2. Auth gate ─────────────────────────────────────────────────────
 section "2. Auth gate (no token → 401)"
 
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/transfers")
-[ "$STATUS" = "401" ] && green "GET /api/transfers no token → 401" \
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/transfers")
+[ "$STATUS" = "401" ] && green "GET /transfers no token → 401" \
                        || red "Expected 401, got $STATUS"
 
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/accounts")
-[ "$STATUS" = "401" ] && green "GET /api/accounts no token → 401" \
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/accounts")
+[ "$STATUS" = "401" ] && green "GET /accounts no token → 401" \
                        || red "Expected 401, got $STATUS"
 
 # ── 3. gRPC ListAccounts ─────────────────────────────────────────────
-section "3. gRPC ListAccounts via GET /api/accounts"
+section "3. gRPC ListAccounts via GET /accounts"
 
-ALICE_ACCOUNTS=$(curl -sf "$BASE/api/accounts" \
+ALICE_ACCOUNTS=$(curl -sf "$BASE/accounts" \
   -H "Authorization: Bearer $ALICE_TOKEN")
 ALICE_COUNT=$(echo "$ALICE_ACCOUNTS" | jq 'length')
 [ "$ALICE_COUNT" = "2" ] && green "alice has 2 accounts" \
@@ -59,7 +59,7 @@ echo "$ALICE_REFS" | grep -q "100000000001" && green "alice A1 ref present" \
 echo "$ALICE_REFS" | grep -q "100000000002" && green "alice A2 ref present" \
                                              || red "alice A2 100000000002 missing"
 
-BOB_ACCOUNTS=$(curl -sf "$BASE/api/accounts" \
+BOB_ACCOUNTS=$(curl -sf "$BASE/accounts" \
   -H "Authorization: Bearer $BOB_TOKEN")
 BOB_COUNT=$(echo "$BOB_ACCOUNTS" | jq 'length')
 [ "$BOB_COUNT" = "1" ] && green "bob has 1 account" \
@@ -69,7 +69,7 @@ BOB_COUNT=$(echo "$BOB_ACCOUNTS" | jq 'length')
 section "4. ValidateOwnership — alice uses bob's account → 403"
 
 IDEM_403=$(python3 -c "import uuid; print(uuid.uuid4())")
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/api/transfers" \
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/transfers" \
   -H "Authorization: Bearer $ALICE_TOKEN" \
   -H "Idempotency-Key: $IDEM_403" \
   -H "Content-Type: application/json" \
@@ -80,7 +80,7 @@ STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/api/transfers" \
 # ── 5. Missing Idempotency-Key → 400 ─────────────────────────────────
 section "5. Missing Idempotency-Key → 400"
 
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/api/transfers" \
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/transfers" \
   -H "Authorization: Bearer $ALICE_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"fromAccountRef":"100000000001","toAccountRef":"200000000001","amount":1000,"currency":"VND"}')
@@ -91,7 +91,7 @@ STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/api/transfers" \
 section "6. Create transfer sufficient funds → 201 PENDING"
 
 IDEM_OK=$(python3 -c "import uuid; print(uuid.uuid4())")
-CREATE_RESP=$(curl -sf -X POST "$BASE/api/transfers" \
+CREATE_RESP=$(curl -sf -X POST "$BASE/transfers" \
   -H "Authorization: Bearer $ALICE_TOKEN" \
   -H "Idempotency-Key: $IDEM_OK" \
   -H "Content-Type: application/json" \
@@ -110,7 +110,7 @@ section "6b. Poll transfer detail → COMPLETED"
 FINAL_STATUS="PENDING"
 for i in $(seq 1 15); do
   sleep 1
-  FINAL_STATUS=$(curl -sf "$BASE/api/transfers/$TRANSFER_ID" \
+  FINAL_STATUS=$(curl -sf "$BASE/transfers/$TRANSFER_ID" \
     -H "Authorization: Bearer $ALICE_TOKEN" | jq -r '.status')
   [ "$FINAL_STATUS" != "PENDING" ] && break
   info "Poll $i/15 still PENDING..."
@@ -121,7 +121,7 @@ done
 # ── 7. Idempotency — replay same key ─────────────────────────────────
 section "7. API idempotency — replay Idempotency-Key"
 
-REPLAY_RESP=$(curl -sf -X POST "$BASE/api/transfers" \
+REPLAY_RESP=$(curl -sf -X POST "$BASE/transfers" \
   -H "Authorization: Bearer $ALICE_TOKEN" \
   -H "Idempotency-Key: $IDEM_OK" \
   -H "Content-Type: application/json" \
@@ -134,7 +134,7 @@ REPLAY_ID=$(echo "$REPLAY_RESP" | jq -r '.id')
 section "8. Insufficient funds → FAILED"
 
 IDEM_INSUF=$(python3 -c "import uuid; print(uuid.uuid4())")
-INSUF_RESP=$(curl -sf -X POST "$BASE/api/transfers" \
+INSUF_RESP=$(curl -sf -X POST "$BASE/transfers" \
   -H "Authorization: Bearer $ALICE_TOKEN" \
   -H "Idempotency-Key: $IDEM_INSUF" \
   -H "Content-Type: application/json" \
@@ -144,7 +144,7 @@ INSUF_ID=$(echo "$INSUF_RESP" | jq -r '.id')
 INSUF_FINAL="PENDING"
 for i in $(seq 1 15); do
   sleep 1
-  DETAIL=$(curl -sf "$BASE/api/transfers/$INSUF_ID" \
+  DETAIL=$(curl -sf "$BASE/transfers/$INSUF_ID" \
     -H "Authorization: Bearer $ALICE_TOKEN")
   INSUF_FINAL=$(echo "$DETAIL" | jq -r '.status')
   INSUF_REASON=$(echo "$DETAIL" | jq -r '.reason // empty')
@@ -160,7 +160,7 @@ done
 section "9. toAccountRef does not exist → FAILED ACCOUNT_NOT_FOUND"
 
 IDEM_NF=$(python3 -c "import uuid; print(uuid.uuid4())")
-NF_RESP=$(curl -sf -X POST "$BASE/api/transfers" \
+NF_RESP=$(curl -sf -X POST "$BASE/transfers" \
   -H "Authorization: Bearer $ALICE_TOKEN" \
   -H "Idempotency-Key: $IDEM_NF" \
   -H "Content-Type: application/json" \
@@ -170,7 +170,7 @@ NF_ID=$(echo "$NF_RESP" | jq -r '.id')
 NF_FINAL="PENDING"
 for i in $(seq 1 15); do
   sleep 1
-  NF_DETAIL=$(curl -sf "$BASE/api/transfers/$NF_ID" \
+  NF_DETAIL=$(curl -sf "$BASE/transfers/$NF_ID" \
     -H "Authorization: Bearer $ALICE_TOKEN")
   NF_FINAL=$(echo "$NF_DETAIL" | jq -r '.status')
   NF_REASON=$(echo "$NF_DETAIL" | jq -r '.reason // empty')
@@ -182,10 +182,10 @@ done
 [ "$NF_REASON" = "ACCOUNT_NOT_FOUND" ] && green "reason = ACCOUNT_NOT_FOUND" \
                                         || red "Expected ACCOUNT_NOT_FOUND, got $NF_REASON"
 
-# ── 10. GET /api/transfers list ───────────────────────────────────────
-section "10. GET /api/transfers lists user's transfers"
+# ── 10. GET /transfers list ───────────────────────────────────────
+section "10. GET /transfers lists user's transfers"
 
-ALICE_TRANSFERS=$(curl -sf "$BASE/api/transfers" \
+ALICE_TRANSFERS=$(curl -sf "$BASE/transfers" \
   -H "Authorization: Bearer $ALICE_TOKEN")
 COUNT=$(echo "$ALICE_TRANSFERS" | jq 'length')
 [ "$COUNT" -ge "1" ] && green "alice transfers list count=$COUNT" \

@@ -12,11 +12,8 @@ export default defineConfig({
     },
   },
   server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:80',
-        changeOrigin: true,
-      },
-    },
+    // FE calls the API cross-origin at VITE_API_BASE_URL (default http://localhost:4000);
+    // Traefik handles CORS, so no dev proxy is needed.
+    port: 3000,
   },
 })

@@ -6,13 +6,14 @@ A demo money-transfer system using event-driven messaging + synchronous gRPC. 3 
 
 ```mermaid
 flowchart LR
-    Browser["Browser (React/Vite)"] --> Traefik
+    Browser["Browser (React/Vite)"] -- "load SPA :3000" --> FE["frontend<br/>(nginx)"]
+    Browser -- "API calls :4000 (CORS)" --> Traefik
 
     subgraph gw[" "]
         Traefik -- "ForwardAuth /auth/verify" --> auth["auth<br/>(REST + Redis session)"]
     end
 
-    Traefik -- "/api/*" --> transfer["transfer<br/>(REST + gRPC client)"]
+    Traefik -- "/transfers, /accounts" --> transfer["transfer<br/>(REST + gRPC client)"]
     auth <--> Redis[("Redis<br/>sessions")]
 
     transfer -- "gRPC ValidateOwnership / ListAccounts" --> account["account<br/>(gRPC server + Kafka)"]
@@ -26,6 +27,7 @@ flowchart LR
     account --> accountdb[("account_db")]
 ```
 
+- **Frontend origin**: the SPA is served by its own nginx on `:3000` and calls the API cross-origin at Traefik `:4000`. Traefik applies a CORS middleware (before ForwardAuth) so browser preflights succeed.
 - **gRPC (sync)**: transfer → account — validate ownership when creating a transfer + list accounts.
 - **Redpanda (async)**: transfer ↔ account — debit/credit + result (Transactional Outbox + Inbox dedup).
 - **Traefik ForwardAuth**: every request to transfer goes through auth `/auth/verify`, which injects `X-User-Id`.
@@ -39,7 +41,7 @@ sequenceDiagram
     participant A as account
     participant R as Redpanda
 
-    C->>T: POST /api/transfers (Idempotency-Key)
+    C->>T: POST /transfers (Idempotency-Key)
     T->>A: gRPC ValidateOwnership
     A-->>T: owned = true
     T->>T: persist transfer (PENDING) + outbox row (1 tx)
@@ -50,7 +52,7 @@ sequenceDiagram
     A->>R: relay transfer.result (outbox)
     R->>T: transfer.result
     T->>T: update transfer COMPLETED/FAILED (inbox dedup)
-    C->>T: GET /api/transfers/{id} → COMPLETED
+    C->>T: GET /transfers/{id} → COMPLETED
 ```
 
 ### Clean Architecture (per Java service)
@@ -85,18 +87,21 @@ docker compose up --build      # build everything; wait until all healthy
 docker compose down -v         # stop + remove volumes (reset state cleanly)
 ```
 
+Open the app at **http://localhost:3000** (FE); the SPA calls the API at **http://localhost:4000** (Traefik).
+
 ## Ports
 
-| Service           | Port (host) | Note                             |
-| ----------------- | ----------- | -------------------------------- |
-| Traefik           | 80          | Gateway, all `/api/*` + FE `/`   |
-| Traefik dashboard | 8081        | Demo only (insecure)             |
-| Postgres          | 5432        | user/pass `fasttrans`; 3 dbs     |
-| Redis             | 6379        | auth session store               |
-| Redpanda          | 9092        | Kafka API (host); 29092 internal |
-| account           | 9090        | gRPC internal (no HTTP exposed)  |
+| Service           | Port (host) | Note                              |
+| ----------------- | ----------- | --------------------------------- |
+| Frontend (nginx)  | 3000        | React SPA (calls the API at 4000) |
+| Traefik           | 4000        | API gateway (`/auth`, `/transfers`, `/accounts`) |
+| Traefik dashboard | 8081        | Demo only (insecure)              |
+| Postgres          | 15432       | user/pass `fasttrans`; 3 dbs      |
+| Redis             | 6379        | auth session store                |
+| Redpanda          | 19092       | Kafka API (host); 29092 internal  |
+| account           | 9090        | gRPC internal (no HTTP exposed)   |
 
-If port `80`/`5432`/`9092` is taken by a local process → edit the `ports:` mapping in `docker-compose.yml`.
+Host ports are remapped to avoid conflicts with local processes (Traefik `4000`, Postgres `15432`, Redpanda `19092`); containers still talk to each other on the standard internal ports (`80`/`5432`/`29092`). If a host port is still taken → edit only the host side (left of the `:`) in the `ports:` mapping in `docker-compose.yml`.
 
 ## Seed data
 
@@ -108,16 +113,16 @@ If port `80`/`5432`/`9092` is taken by a local process → edit the `ports:` map
 
 Money is stored as `bigint` in the smallest unit (VND: 1 = 1 dong). Accounts are referenced by `accountRef` (12-digit public), while UUIDs are used only internally in account_db.
 
-## API (qua Traefik `/api`)
+## API (qua Traefik `:4000`)
 
-| Method | Path                  | Auth        | Description                                  |
-| ------ | --------------------- | ----------- | -------------------------------------------- |
-| POST   | `/api/auth/login`     | —           | `{username,password}` → `{token}`            |
-| GET    | `/api/auth/verify`    | Bearer      | ForwardAuth endpoint (internal)              |
-| GET    | `/api/accounts`       | ForwardAuth | list the user's accounts (gRPC)              |
-| POST   | `/api/transfers`      | ForwardAuth | create a transfer (`Idempotency-Key` header) |
-| GET    | `/api/transfers`      | ForwardAuth | list the user's transfers                    |
-| GET    | `/api/transfers/{id}` | ForwardAuth | detail of a single transfer                  |
+| Method | Path              | Auth        | Description                                  |
+| ------ | ----------------- | ----------- | -------------------------------------------- |
+| POST   | `/auth/login`     | —           | `{username,password}` → `{token}`            |
+| GET    | `/auth/verify`    | Bearer      | ForwardAuth endpoint (internal)              |
+| GET    | `/accounts`       | ForwardAuth | list the user's accounts (gRPC)              |
+| POST   | `/transfers`      | ForwardAuth | create a transfer (`Idempotency-Key` header) |
+| GET    | `/transfers`      | ForwardAuth | list the user's transfers                    |
+| GET    | `/transfers/{id}` | ForwardAuth | detail of a single transfer                  |
 
 ## Contracts
 
@@ -138,23 +143,23 @@ Or manually:
 
 ```bash
 # 1. Login to get a token
-TOKEN=$(curl -sf -X POST http://localhost/api/auth/login \
+TOKEN=$(curl -sf -X POST http://localhost:4000/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"alice","password":"password"}' | jq -r '.token')
 
 # 2. List accounts (gRPC ListAccounts)
-curl -s http://localhost/api/accounts \
+curl -s http://localhost:4000/accounts \
   -H "Authorization: Bearer $TOKEN" | jq .
 
 # 3. Create a transfer (fromAccountRef must belong to alice)
-curl -s -X POST http://localhost/api/transfers \
+curl -s -X POST http://localhost:4000/transfers \
   -H "Authorization: Bearer $TOKEN" \
   -H "Idempotency-Key: $(python3 -c 'import uuid; print(uuid.uuid4())')" \
   -H "Content-Type: application/json" \
   -d '{"fromAccountRef":"100000000001","toAccountRef":"200000000001","amount":50000,"currency":"VND"}' | jq .
 
 # 4. Poll the detail until COMPLETED/FAILED
-curl -s http://localhost/api/transfers/<id> \
+curl -s http://localhost:4000/transfers/<id> \
   -H "Authorization: Bearer $TOKEN" | jq .
 
 # 5. Inspect the ledger directly (after docker compose up)
@@ -186,7 +191,7 @@ docker compose down -v   # remove all volumes; the next up re-seeds from scratch
 
 **account service slow to start (gRPC not ready yet):** transfer uses `depends_on account: condition: service_healthy`; the actuator health check on port 8080 uses WebFlux (Netty). start_period is 60s — enough for Flyway migration + JVM warm-up.
 
-**Port conflict:** if `80`/`5432`/`9092` is taken → edit the `ports:` mapping in `docker-compose.yml`, changing only the host side (left of the `:`).
+**Port conflict:** if `4000`/`15432`/`19092` is taken → edit the `ports:` mapping in `docker-compose.yml`, changing only the host side (left of the `:`).
 
 **Outbox stuck at PENDING:** check the relay logs:
 
