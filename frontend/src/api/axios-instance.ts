@@ -1,4 +1,4 @@
-import axios, { type AxiosRequestConfig } from 'axios'
+import axios, { type AxiosError, type AxiosRequestConfig } from 'axios'
 
 // Single axios instance shared across all generated API calls.
 // The SPA is a separate origin (localhost:3000) and calls Traefik cross-origin.
@@ -33,9 +33,63 @@ AXIOS_INSTANCE.interceptors.response.use(
 )
 
 // customInstance is the mutator used by orval-generated code.
-// It unwraps response.data so callers receive T directly.
+// All service responses are wrapped as { data: T, meta: Meta } by the backend
+// ResponseBodyAdvice. We unwrap one layer here so callers receive T directly.
+//
+// Unwrap<T>: if orval passes a generated envelope type (e.g. Login200 = { data: LoginResponse, meta: Meta })
+// the conditional type resolves the inner payload so hooks return the raw DTO.
+// If T has no `data` key (legacy / direct call) it passes through unchanged.
+type Unwrap<T> = T extends { data: infer D } ? D : T
+
 export const customInstance = <T>(
   config: AxiosRequestConfig,
-): Promise<T> => {
-  return AXIOS_INSTANCE(config).then((response) => response.data as T)
+): Promise<Unwrap<T>> => {
+  return AXIOS_INSTANCE(config).then((response) => {
+    const envelope = response.data as { data: unknown }
+    if (envelope !== null && typeof envelope === 'object' && 'data' in envelope) {
+      return envelope.data as Unwrap<T>
+    }
+    return response.data as Unwrap<T>
+  })
 }
+
+// Shape of the backend error envelope's error body.
+export interface ApiErrorBody {
+  code: string
+  message: string
+  details?: Array<{ field: string; message: string }>
+}
+
+/**
+ * Extract structured error info from an Axios error response.
+ * Reads `err.response.data.error` (ErrorBody) and `err.response.data.meta.requestId`.
+ * Falls back to HTTP status text when the body is absent (e.g. network errors).
+ */
+export function extractApiError(err: unknown): {
+  code: string | null
+  message: string
+  details: Array<{ field: string; message: string }>
+  requestId: string | null
+} {
+  if (!axios.isAxiosError(err)) {
+    return { code: null, message: 'An unexpected error occurred.', details: [], requestId: null }
+  }
+
+  const axiosErr = err as AxiosError<{ error?: ApiErrorBody; meta?: { requestId?: string } }>
+  const errorBody = axiosErr.response?.data?.error
+  const requestId = axiosErr.response?.data?.meta?.requestId ?? null
+
+  if (errorBody) {
+    return {
+      code: errorBody.code,
+      message: errorBody.message,
+      details: errorBody.details ?? [],
+      requestId,
+    }
+  }
+
+  // Fallback: no structured body (network error, proxy error, etc.)
+  const statusText = axiosErr.response?.statusText ?? 'Request failed'
+  return { code: null, message: statusText, details: [], requestId }
+}
+

@@ -24,9 +24,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  Create200,
   CreateTransferRequest,
-  CreateTransferResponse,
-  TransferResponse
+  Detail200,
+  ErrorResponse,
+  List200
 } from '../models';
 
 import { customInstance } from '../../axios-instance.ts';
@@ -58,7 +60,7 @@ export const list = (
 ) => {
 
 
-      return customInstance<TransferResponse[]>(
+      return customInstance<List200>(
       {url: `/transfers`, method: 'GET', signal
     },
       );
@@ -74,7 +76,7 @@ export const getListQueryKey = () => {
     }
 
 
-export const getListQueryOptions = <TData = Awaited<ReturnType<typeof list>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list>>, TError, TData>>, }
+export const getListQueryOptions = <TData = Awaited<ReturnType<typeof list>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
@@ -93,10 +95,10 @@ const {query: queryOptions} = options ?? {};
 }
 
 export type ListQueryResult = NonNullable<Awaited<ReturnType<typeof list>>>
-export type ListQueryError = unknown
+export type ListQueryError = ErrorResponse
 
 
-export function useList<TData = Awaited<ReturnType<typeof list>>, TError = unknown>(
+export function useList<TData = Awaited<ReturnType<typeof list>>, TError = ErrorResponse>(
   options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof list>>,
@@ -106,7 +108,7 @@ export function useList<TData = Awaited<ReturnType<typeof list>>, TError = unkno
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList<TData = Awaited<ReturnType<typeof list>>, TError = unknown>(
+export function useList<TData = Awaited<ReturnType<typeof list>>, TError = ErrorResponse>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof list>>,
@@ -116,7 +118,7 @@ export function useList<TData = Awaited<ReturnType<typeof list>>, TError = unkno
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList<TData = Awaited<ReturnType<typeof list>>, TError = unknown>(
+export function useList<TData = Awaited<ReturnType<typeof list>>, TError = ErrorResponse>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -124,7 +126,7 @@ export function useList<TData = Awaited<ReturnType<typeof list>>, TError = unkno
  * @summary List the current user's transfers, most recent first
  */
 
-export function useList<TData = Awaited<ReturnType<typeof list>>, TError = unknown>(
+export function useList<TData = Awaited<ReturnType<typeof list>>, TError = ErrorResponse>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list>>, TError, TData>>, }
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -150,7 +152,7 @@ export const create = (
 ) => {
 
 
-      return customInstance<CreateTransferResponse>(
+      return customInstance<Create200>(
       {url: `/transfers`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: createTransferRequest, signal
@@ -161,7 +163,7 @@ export const create = (
 
 
 
-export const getCreateMutationOptions = <TError = unknown,
+export const getCreateMutationOptions = <TError = ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create>>, TError,{data: CreateTransferRequest}, TContext>, }
 ): UseMutationOptions<Awaited<ReturnType<typeof create>>, TError,{data: CreateTransferRequest}, TContext> => {
 
@@ -190,12 +192,12 @@ const {mutation: mutationOptions} = options ?
 
     export type CreateMutationResult = NonNullable<Awaited<ReturnType<typeof create>>>
     export type CreateMutationBody = CreateTransferRequest
-    export type CreateMutationError = unknown
+    export type CreateMutationError = ErrorResponse
 
     /**
  * @summary Create a transfer (or idempotent replay)
  */
-export const useCreate = <TError = unknown,
+export const useCreate = <TError = ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create>>, TError,{data: CreateTransferRequest}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof create>>,
@@ -214,7 +216,7 @@ export const detail = (
 ) => {
 
 
-      return customInstance<TransferResponse>(
+      return customInstance<Detail200>(
       {url: `/transfers/${id}`, method: 'GET', signal
     },
       );
@@ -230,7 +232,7 @@ export const getDetailQueryKey = (id: string,) => {
     }
 
 
-export const getDetailQueryOptions = <TData = Awaited<ReturnType<typeof detail>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof detail>>, TError, TData>>, }
+export const getDetailQueryOptions = <TData = Awaited<ReturnType<typeof detail>>, TError = ErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof detail>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
@@ -249,10 +251,10 @@ const {query: queryOptions} = options ?? {};
 }
 
 export type DetailQueryResult = NonNullable<Awaited<ReturnType<typeof detail>>>
-export type DetailQueryError = unknown
+export type DetailQueryError = ErrorResponse
 
 
-export function useDetail<TData = Awaited<ReturnType<typeof detail>>, TError = unknown>(
+export function useDetail<TData = Awaited<ReturnType<typeof detail>>, TError = ErrorResponse>(
  id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof detail>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof detail>>,
@@ -262,7 +264,7 @@ export function useDetail<TData = Awaited<ReturnType<typeof detail>>, TError = u
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useDetail<TData = Awaited<ReturnType<typeof detail>>, TError = unknown>(
+export function useDetail<TData = Awaited<ReturnType<typeof detail>>, TError = ErrorResponse>(
  id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof detail>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof detail>>,
@@ -272,7 +274,7 @@ export function useDetail<TData = Awaited<ReturnType<typeof detail>>, TError = u
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useDetail<TData = Awaited<ReturnType<typeof detail>>, TError = unknown>(
+export function useDetail<TData = Awaited<ReturnType<typeof detail>>, TError = ErrorResponse>(
  id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof detail>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -280,7 +282,7 @@ export function useDetail<TData = Awaited<ReturnType<typeof detail>>, TError = u
  * @summary Get a single transfer by id
  */
 
-export function useDetail<TData = Awaited<ReturnType<typeof detail>>, TError = unknown>(
+export function useDetail<TData = Awaited<ReturnType<typeof detail>>, TError = ErrorResponse>(
  id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof detail>>, TError, TData>>, }
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {

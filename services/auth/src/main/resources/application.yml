@@ -1,6 +1,12 @@
 server:
   port: 8080
 
+# Include stack traces in error envelopes only when explicitly enabled (dev/debug).
+# Default off so production responses never leak internal detail.
+fasttrans:
+  error:
+    include-stacktrace: ${FASTTRANS_ERROR_INCLUDE_STACKTRACE:false}
+
 spring:
   application:
     name: auth-service
@@ -34,3 +40,8 @@ management:
     health:
       probes:
         enabled: true
+  # Distributed tracing: sample every request (demo). traceId lands in the MDC
+  # and in the error-envelope meta.requestId. No collector/reporter configured.
+  tracing:
+    sampling:
+      probability: 1.0

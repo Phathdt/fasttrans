@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
-import type { AxiosError } from 'axios'
 import { AlertCircle, Loader2, Lock } from 'lucide-react'
 import { login } from '@/api/generated/auth/auth'
+import { extractApiError } from '@/api/axios-instance'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,12 +29,8 @@ export default function LoginPage() {
       navigate('/transfers', { replace: true })
     },
     onError: (err: unknown) => {
-      const status = (err as AxiosError).response?.status
-      if (status === 401) {
-        setError('Invalid username or password.')
-      } else {
-        setError('Login failed. Please try again.')
-      }
+      const { message } = extractApiError(err)
+      setError(message || 'Login failed. Please try again.')
     },
   })
 

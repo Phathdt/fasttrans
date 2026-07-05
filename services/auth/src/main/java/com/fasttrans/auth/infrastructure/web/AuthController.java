@@ -3,6 +3,7 @@ package com.fasttrans.auth.infrastructure.web;
 import com.fasttrans.auth.application.dto.LoginRequest;
 import com.fasttrans.auth.application.dto.LoginResponse;
 import com.fasttrans.auth.application.services.AuthService;
+import com.fasttrans.auth.domain.exception.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,10 +33,12 @@ public class AuthController {
 
     @Operation(summary = "Log in with username/password and receive a bearer token")
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest req) {
+    public LoginResponse login(@Valid @RequestBody LoginRequest req) {
+        // Invalid credentials → UnauthorizedException → 401 error envelope.
+        // Success returns the raw DTO; SuccessEnvelopeAdvice wraps it as { data, meta }.
         return authService.login(req.username(), req.password())
-                .map(token -> ResponseEntity.ok(new LoginResponse(token, authService.getTtlSeconds())))
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+                .map(token -> new LoginResponse(token, authService.getTtlSeconds()))
+                .orElseThrow(() -> new UnauthorizedException("Invalid username or password"));
     }
 
     // Endpoint for Traefik ForwardAuth: 200 + X-User-Id if valid, 401 otherwise.

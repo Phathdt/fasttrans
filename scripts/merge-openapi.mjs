@@ -51,6 +51,135 @@ const mergedTags = [
   ...(accountSpec.tags ?? []),
 ];
 
+// ---------------------------------------------------------------------------
+// Envelope transform
+//
+// springdoc generates schemas from method return types and does NOT reflect
+// the runtime ResponseBodyAdvice wrapping. We apply the transform here:
+//
+//   Success (2xx with JSON body)  → { data: <original>, meta: Meta }
+//   Error  (4xx/5xx)              → ErrorResponse
+//
+// /auth/verify is ResponseEntity<Void> with no JSON body so it is naturally
+// excluded (no content[*].schema to transform).
+// ---------------------------------------------------------------------------
+
+/** Wrap an existing schema inside the success envelope. */
+function wrapInDataEnvelope(originalSchema) {
+  return {
+    type: 'object',
+    properties: {
+      data: originalSchema,
+      meta: { $ref: '#/components/schemas/Meta' },
+    },
+    required: ['data', 'meta'],
+  };
+}
+
+/** Standard error responses added to every operation. */
+const errorResponses = {
+  '400': {
+    description: 'Bad Request',
+    content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+  },
+  '401': {
+    description: 'Unauthorized',
+    content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+  },
+  '403': {
+    description: 'Forbidden',
+    content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+  },
+  '404': {
+    description: 'Not Found',
+    content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+  },
+  '500': {
+    description: 'Internal Server Error',
+    content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+  },
+  '503': {
+    description: 'Service Unavailable',
+    content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+  },
+};
+
+const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace'];
+
+for (const pathItem of Object.values(mergedPaths)) {
+  for (const method of HTTP_METHODS) {
+    const operation = pathItem[method];
+    if (!operation || typeof operation !== 'object' || !operation.responses) continue;
+
+    for (const [statusCode, response] of Object.entries(operation.responses)) {
+      const code = parseInt(statusCode, 10);
+
+      // Wrap 2xx JSON bodies in { data, meta }
+      if (code >= 200 && code < 300 && response.content) {
+        for (const mediaObj of Object.values(response.content)) {
+          if (mediaObj && mediaObj.schema) {
+            mediaObj.schema = wrapInDataEnvelope(mediaObj.schema);
+          }
+        }
+      }
+    }
+
+    // Merge in standard error responses (do not overwrite explicit ones)
+    operation.responses = { ...errorResponses, ...operation.responses };
+  }
+}
+
+/** Envelope component schemas added to every merged spec. */
+const envelopeSchemas = {
+  Meta: {
+    type: 'object',
+    properties: {
+      requestId: { type: 'string', description: 'Correlation id — equals the current traceId (fallback UUID)' },
+      timestamp: { type: 'string', format: 'date-time', description: 'ISO-8601 UTC instant the response was built' },
+    },
+    required: ['requestId', 'timestamp'],
+  },
+  FieldError: {
+    type: 'object',
+    properties: {
+      field:   { type: 'string', description: 'The request field that failed validation' },
+      message: { type: 'string', description: 'The validation message for that field' },
+    },
+    required: ['field', 'message'],
+  },
+  ErrorBody: {
+    type: 'object',
+    properties: {
+      code: {
+        type: 'string',
+        enum: [
+          'VALIDATION_FAILED',
+          'MISSING_HEADER',
+          'UNAUTHORIZED',
+          'ACCOUNT_NOT_FOUND',
+          'TRANSFER_NOT_FOUND',
+          'OWNERSHIP_DENIED',
+          'ACCOUNT_UNAVAILABLE',
+          'INTERNAL_ERROR',
+        ],
+        description: 'Machine-readable error code',
+      },
+      message:    { type: 'string', description: 'Human-readable error message' },
+      details:    { type: 'array', items: { $ref: '#/components/schemas/FieldError' }, description: 'Validation failures; omitted when empty' },
+      stackTrace: { type: 'string', description: 'Populated only when the stacktrace flag is enabled; omitted otherwise' },
+    },
+    required: ['code', 'message'],
+  },
+  ErrorResponse: {
+    type: 'object',
+    properties: {
+      error: { $ref: '#/components/schemas/ErrorBody' },
+      meta:  { $ref: '#/components/schemas/Meta' },
+    },
+    required: ['error', 'meta'],
+  },
+};
+
 const output = {
   openapi: '3.0.1',
   info: {
@@ -61,7 +190,11 @@ const output = {
   tags: mergedTags,
   paths: mergedPaths,
   components: {
-    schemas: mergedSchemas,
+    schemas: {
+      // Envelope schemas come first so $ref targets are defined before use
+      ...envelopeSchemas,
+      ...mergedSchemas,
+    },
   },
 };
 

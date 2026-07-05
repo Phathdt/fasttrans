@@ -20,8 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  AccountLookupResponse,
-  AccountResponse
+  ErrorResponse,
+  ListAccounts200,
+  Lookup200
 } from '../models';
 
 import { customInstance } from '../../axios-instance.ts';
@@ -53,7 +54,7 @@ export const listAccounts = (
 ) => {
 
 
-      return customInstance<AccountResponse[]>(
+      return customInstance<ListAccounts200>(
       {url: `/accounts`, method: 'GET', signal
     },
       );
@@ -69,7 +70,7 @@ export const getListAccountsQueryKey = () => {
     }
 
 
-export const getListAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listAccounts>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAccounts>>, TError, TData>>, }
+export const getListAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listAccounts>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAccounts>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
@@ -88,10 +89,10 @@ const {query: queryOptions} = options ?? {};
 }
 
 export type ListAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof listAccounts>>>
-export type ListAccountsQueryError = unknown
+export type ListAccountsQueryError = ErrorResponse
 
 
-export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>, TError = unknown>(
+export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>, TError = ErrorResponse>(
   options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAccounts>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listAccounts>>,
@@ -101,7 +102,7 @@ export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>, TError = unknown>(
+export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>, TError = ErrorResponse>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAccounts>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listAccounts>>,
@@ -111,7 +112,7 @@ export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>, TError = unknown>(
+export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>, TError = ErrorResponse>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAccounts>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -119,7 +120,7 @@ export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>
  * @summary List the current user's accounts with balances
  */
 
-export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>, TError = unknown>(
+export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>, TError = ErrorResponse>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAccounts>>, TError, TData>>, }
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -145,7 +146,7 @@ export const lookup = (
 ) => {
 
 
-      return customInstance<AccountLookupResponse>(
+      return customInstance<Lookup200>(
       {url: `/accounts/${accountRef}`, method: 'GET', signal
     },
       );
@@ -161,7 +162,7 @@ export const getLookupQueryKey = (accountRef: string,) => {
     }
 
 
-export const getLookupQueryOptions = <TData = Awaited<ReturnType<typeof lookup>>, TError = unknown>(accountRef: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof lookup>>, TError, TData>>, }
+export const getLookupQueryOptions = <TData = Awaited<ReturnType<typeof lookup>>, TError = ErrorResponse>(accountRef: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof lookup>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
@@ -180,10 +181,10 @@ const {query: queryOptions} = options ?? {};
 }
 
 export type LookupQueryResult = NonNullable<Awaited<ReturnType<typeof lookup>>>
-export type LookupQueryError = unknown
+export type LookupQueryError = ErrorResponse
 
 
-export function useLookup<TData = Awaited<ReturnType<typeof lookup>>, TError = unknown>(
+export function useLookup<TData = Awaited<ReturnType<typeof lookup>>, TError = ErrorResponse>(
  accountRef: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof lookup>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof lookup>>,
@@ -193,7 +194,7 @@ export function useLookup<TData = Awaited<ReturnType<typeof lookup>>, TError = u
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useLookup<TData = Awaited<ReturnType<typeof lookup>>, TError = unknown>(
+export function useLookup<TData = Awaited<ReturnType<typeof lookup>>, TError = ErrorResponse>(
  accountRef: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof lookup>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof lookup>>,
@@ -203,7 +204,7 @@ export function useLookup<TData = Awaited<ReturnType<typeof lookup>>, TError = u
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useLookup<TData = Awaited<ReturnType<typeof lookup>>, TError = unknown>(
+export function useLookup<TData = Awaited<ReturnType<typeof lookup>>, TError = ErrorResponse>(
  accountRef: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof lookup>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -211,7 +212,7 @@ export function useLookup<TData = Awaited<ReturnType<typeof lookup>>, TError = u
  * @summary Look up an account by its public ref (no balance)
  */
 
-export function useLookup<TData = Awaited<ReturnType<typeof lookup>>, TError = unknown>(
+export function useLookup<TData = Awaited<ReturnType<typeof lookup>>, TError = ErrorResponse>(
  accountRef: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof lookup>>, TError, TData>>, }
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {

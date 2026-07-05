@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react'
 import { useDetail } from '@/api/generated/transfers/transfers'
 import type { TransferResponse } from '@/api/generated/models'
+import { extractApiError } from '@/api/axios-instance'
 import { TransferStatusBadge } from '@/components/transfer-status-badge'
 import { formatDateTime, formatVnd } from '@/lib/format'
 import {
@@ -20,7 +21,7 @@ export default function TransferDetailPage() {
   const attemptRef = useRef(0)
   const [timedOut, setTimedOut] = useState(false)
 
-  const { data: transfer, isError, dataUpdatedAt } = useDetail(id!, {
+  const { data: transfer, isError, error, dataUpdatedAt } = useDetail(id!, {
     query: {
       enabled: !!id,
       // Refetch every POLL_INTERVAL_MS while status is PENDING and under attempt limit.
@@ -70,7 +71,7 @@ export default function TransferDetailPage() {
             className="flex items-center gap-2 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive"
           >
             <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
-            Failed to load transfer.
+            {extractApiError(error).message || 'Failed to load transfer.'}
           </p>
         )}
 
