@@ -7,7 +7,7 @@
 import type { AccountLookupResponse } from './accountLookupResponse.ts';
 import type { Meta } from './meta.ts';
 
-export type Lookup200 = {
+export interface LookupAccountEnvelope {
   data: AccountLookupResponse;
   meta: Meta;
-};
+}

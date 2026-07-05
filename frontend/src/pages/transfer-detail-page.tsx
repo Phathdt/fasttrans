@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react'
-import { useDetail } from '@/api/generated/transfers/transfers'
+import { useGetTransfer } from '@/api/generated/transfers/transfers'
 import type { TransferResponse } from '@/api/generated/models'
 import { extractApiError } from '@/api/axios-instance'
 import { TransferStatusBadge } from '@/components/transfer-status-badge'
@@ -21,7 +21,7 @@ export default function TransferDetailPage() {
   const attemptRef = useRef(0)
   const [timedOut, setTimedOut] = useState(false)
 
-  const { data: transfer, isError, error, dataUpdatedAt } = useDetail(id!, {
+  const { data: transfer, isError, error, dataUpdatedAt } = useGetTransfer(id!, {
     query: {
       enabled: !!id,
       // Refetch every POLL_INTERVAL_MS while status is PENDING and under attempt limit.

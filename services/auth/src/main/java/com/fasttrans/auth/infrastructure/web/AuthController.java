@@ -31,7 +31,7 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @Operation(summary = "Log in with username/password and receive a bearer token")
+    @Operation(summary = "Log in with username/password and receive a bearer token", operationId = "login")
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest req) {
         // Invalid credentials → UnauthorizedException → 401 error envelope.

@@ -7,7 +7,7 @@
 import type { Meta } from './meta.ts';
 import type { TransferResponse } from './transferResponse.ts';
 
-export type Detail200 = {
+export interface GetTransferEnvelope {
   data: TransferResponse;
   meta: Meta;
-};
+}

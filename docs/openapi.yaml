@@ -30,15 +30,7 @@ paths:
           content:
             "*/*":
               schema:
-                type: object
-                properties:
-                  data:
-                    $ref: "#/components/schemas/LoginResponse"
-                  meta:
-                    $ref: "#/components/schemas/Meta"
-                required:
-                  - data
-                  - meta
+                $ref: "#/components/schemas/LoginEnvelope"
         "400": &a1
           description: Bad Request
           content:
@@ -80,24 +72,14 @@ paths:
       tags:
         - transfers
       summary: List the current user's transfers, most recent first
-      operationId: list
+      operationId: listTransfers
       responses:
         "200":
           description: OK
           content:
             "*/*":
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/TransferResponse"
-                  meta:
-                    $ref: "#/components/schemas/Meta"
-                required:
-                  - data
-                  - meta
+                $ref: "#/components/schemas/ListTransfersEnvelope"
         "400": *a1
         "401": *a2
         "403": *a3
@@ -108,7 +90,7 @@ paths:
       tags:
         - transfers
       summary: Create a transfer (or idempotent replay)
-      operationId: create
+      operationId: createTransfer
       parameters:
         - name: Idempotency-Key
           in: header
@@ -128,15 +110,7 @@ paths:
           content:
             "*/*":
               schema:
-                type: object
-                properties:
-                  data:
-                    $ref: "#/components/schemas/CreateTransferResponse"
-                  meta:
-                    $ref: "#/components/schemas/Meta"
-                required:
-                  - data
-                  - meta
+                $ref: "#/components/schemas/CreateTransferEnvelope"
         "400": *a1
         "401": *a2
         "403": *a3
@@ -148,7 +122,7 @@ paths:
       tags:
         - transfers
       summary: Get a single transfer by id
-      operationId: detail
+      operationId: getTransfer
       parameters:
         - name: id
           in: path
@@ -162,15 +136,7 @@ paths:
           content:
             "*/*":
               schema:
-                type: object
-                properties:
-                  data:
-                    $ref: "#/components/schemas/TransferResponse"
-                  meta:
-                    $ref: "#/components/schemas/Meta"
-                required:
-                  - data
-                  - meta
+                $ref: "#/components/schemas/GetTransferEnvelope"
         "400": *a1
         "401": *a2
         "403": *a3
@@ -189,17 +155,7 @@ paths:
           content:
             "*/*":
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/AccountResponse"
-                  meta:
-                    $ref: "#/components/schemas/Meta"
-                required:
-                  - data
-                  - meta
+                $ref: "#/components/schemas/ListAccountsEnvelope"
         "400": *a1
         "401": *a2
         "403": *a3
@@ -211,7 +167,7 @@ paths:
       tags:
         - accounts
       summary: Look up an account by its public ref (no balance)
-      operationId: lookup
+      operationId: lookupAccount
       parameters:
         - name: accountRef
           in: path
@@ -224,15 +180,7 @@ paths:
           content:
             "*/*":
               schema:
-                type: object
-                properties:
-                  data:
-                    $ref: "#/components/schemas/AccountLookupResponse"
-                  meta:
-                    $ref: "#/components/schemas/Meta"
-                required:
-                  - data
-                  - meta
+                $ref: "#/components/schemas/LookupAccountEnvelope"
         "400": *a1
         "401": *a2
         "403": *a3
@@ -304,6 +252,70 @@ components:
           $ref: "#/components/schemas/Meta"
       required:
         - error
+        - meta
+    LoginEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/LoginResponse"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required:
+        - data
+        - meta
+    ListTransfersEnvelope:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransferResponse"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required:
+        - data
+        - meta
+    CreateTransferEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateTransferResponse"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required:
+        - data
+        - meta
+    GetTransferEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/TransferResponse"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required:
+        - data
+        - meta
+    ListAccountsEnvelope:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountResponse"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required:
+        - data
+        - meta
+    LookupAccountEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AccountLookupResponse"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required:
+        - data
         - meta
     LoginRequest:
       required:

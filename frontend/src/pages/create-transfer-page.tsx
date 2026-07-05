@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
 import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react'
-import { useListAccounts, useLookup } from '@/api/generated/accounts/accounts'
+import { useListAccounts, useLookupAccount } from '@/api/generated/accounts/accounts'
 import type { AccountResponse, CreateTransferRequest, CreateTransferResponse } from '@/api/generated/models'
 import { customInstance, extractApiError } from '@/api/axios-instance'
 import { Button } from '@/components/ui/button'
@@ -60,7 +60,7 @@ export default function CreateTransferPage() {
     data: lookupData,
     error: lookupError,
     isFetching: lookupFetching,
-  } = useLookup(trimmedTo, {
+  } = useLookupAccount(trimmedTo, {
     query: {
       enabled: trimmedTo.length === 12,
       retry: false,

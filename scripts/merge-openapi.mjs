@@ -64,9 +64,24 @@ const mergedTags = [
 // excluded (no content[*].schema to transform).
 // ---------------------------------------------------------------------------
 
-/** Wrap an existing schema inside the success envelope. */
-function wrapInDataEnvelope(originalSchema) {
-  return {
+// Named success-envelope components, one per operation, collected while walking
+// the paths and appended to components.schemas. Using a named component (rather
+// than an inline object) makes orval emit a self-documenting type per endpoint —
+// e.g. `ListAccountsEnvelope` instead of an anonymous `ListAccounts200`.
+const generatedEnvelopeSchemas = {};
+
+/** PascalCase an operationId: `listAccounts` → `ListAccounts`. */
+function pascalCase(operationId) {
+  return operationId.charAt(0).toUpperCase() + operationId.slice(1);
+}
+
+/**
+ * Register a `${OperationId}Envelope` component wrapping the original 2xx schema
+ * as `{ data, meta }` and return a $ref to it. Falls back to an inline wrapper
+ * when the operation has no operationId to name the component after.
+ */
+function wrapInDataEnvelope(originalSchema, operationId) {
+  const wrapper = {
     type: 'object',
     properties: {
       data: originalSchema,
@@ -74,6 +89,11 @@ function wrapInDataEnvelope(originalSchema) {
     },
     required: ['data', 'meta'],
   };
+  if (!operationId) return wrapper;
+
+  const name = `${pascalCase(operationId)}Envelope`;
+  generatedEnvelopeSchemas[name] = wrapper;
+  return { $ref: `#/components/schemas/${name}` };
 }
 
 /** Standard error responses added to every operation. */
@@ -118,7 +138,7 @@ for (const pathItem of Object.values(mergedPaths)) {
       if (code >= 200 && code < 300 && response.content) {
         for (const mediaObj of Object.values(response.content)) {
           if (mediaObj && mediaObj.schema) {
-            mediaObj.schema = wrapInDataEnvelope(mediaObj.schema);
+            mediaObj.schema = wrapInDataEnvelope(mediaObj.schema, operation.operationId);
           }
         }
       }
@@ -193,6 +213,8 @@ const output = {
     schemas: {
       // Envelope schemas come first so $ref targets are defined before use
       ...envelopeSchemas,
+      // Per-operation success envelopes (ListAccountsEnvelope, LoginEnvelope, ...)
+      ...generatedEnvelopeSchemas,
       ...mergedSchemas,
     },
   },

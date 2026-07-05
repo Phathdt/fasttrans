@@ -32,7 +32,7 @@ public class AccountController {
      */
     @Operation(summary = "List the current user's accounts with balances", operationId = "listAccounts")
     @GetMapping("/accounts")
-    public List<AccountResponse> list(
+    public List<AccountResponse> listAccounts(
             @Parameter(hidden = true) @RequestHeader("X-User-Id") String userIdHeader) {
         return accountQueryService.listAccounts(UUID.fromString(userIdHeader)).stream()
                 .map(a -> new AccountResponse(a.getAccountRef(), a.getOwnerName(), a.getBalance(), a.getCurrency()))
@@ -43,9 +43,9 @@ public class AccountController {
      * GET /accounts/{accountRef} — resolve a public account ref to owner name.
      * Balance is intentionally omitted (privacy). Returns 404 when ref does not exist.
      */
-    @Operation(summary = "Look up an account by its public ref (no balance)")
+    @Operation(summary = "Look up an account by its public ref (no balance)", operationId = "lookupAccount")
     @GetMapping("/accounts/{accountRef}")
-    public AccountLookupResponse lookup(@PathVariable String accountRef) {
+    public AccountLookupResponse lookupAccount(@PathVariable String accountRef) {
         return accountQueryService.lookup(accountRef)
                 .map(a -> new AccountLookupResponse(a.getAccountRef(), a.getOwnerName()))
                 .orElseThrow(() -> new AccountNotFoundException("Account " + accountRef + " not found"));

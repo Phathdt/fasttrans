@@ -16,7 +16,7 @@ import type {
 
 import type {
   ErrorResponse,
-  Login200,
+  LoginEnvelope,
   LoginRequest
 } from '../models';
 
@@ -34,7 +34,7 @@ export const login = (
 ) => {
 
 
-      return customInstance<Login200>(
+      return customInstance<LoginEnvelope>(
       {url: `/auth/login`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: loginRequest, signal

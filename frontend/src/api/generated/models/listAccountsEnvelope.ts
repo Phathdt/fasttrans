@@ -4,10 +4,10 @@
  * FastTrans API
  * OpenAPI spec version: 1.0.0
  */
-import type { LoginResponse } from './loginResponse.ts';
+import type { AccountResponse } from './accountResponse.ts';
 import type { Meta } from './meta.ts';
 
-export type Login200 = {
-  data: LoginResponse;
+export interface ListAccountsEnvelope {
+  data: AccountResponse[];
   meta: Meta;
-};
+}

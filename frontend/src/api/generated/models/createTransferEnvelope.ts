@@ -4,10 +4,10 @@
  * FastTrans API
  * OpenAPI spec version: 1.0.0
  */
+import type { CreateTransferResponse } from './createTransferResponse.ts';
 import type { Meta } from './meta.ts';
-import type { TransferResponse } from './transferResponse.ts';
 
-export type List200 = {
-  data: TransferResponse[];
+export interface CreateTransferEnvelope {
+  data: CreateTransferResponse;
   meta: Meta;
-};
+}

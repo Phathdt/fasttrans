@@ -36,7 +36,7 @@ AXIOS_INSTANCE.interceptors.response.use(
 // All service responses are wrapped as { data: T, meta: Meta } by the backend
 // ResponseBodyAdvice. We unwrap one layer here so callers receive T directly.
 //
-// Unwrap<T>: if orval passes a generated envelope type (e.g. Login200 = { data: LoginResponse, meta: Meta })
+// Unwrap<T>: if orval passes a generated envelope type (e.g. LoginEnvelope = { data: LoginResponse, meta: Meta })
 // the conditional type resolves the inner payload so hooks return the raw DTO.
 // If T has no `data` key (legacy / direct call) it passes through unchanged.
 type Unwrap<T> = T extends { data: infer D } ? D : T
