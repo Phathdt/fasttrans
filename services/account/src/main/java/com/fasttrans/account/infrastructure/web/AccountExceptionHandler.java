@@ -14,11 +14,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 // InsufficientFundsException is intentionally NOT mapped here — it is caught
 // inside ProcessTransferService (Kafka async flow) and never surfaces over REST.
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class AccountExceptionHandler {
 
     private final ErrorResponseFactory errors;
 
-    public GlobalExceptionHandler(ErrorResponseFactory errors) {
+    public AccountExceptionHandler(ErrorResponseFactory errors) {
         this.errors = errors;
     }
 

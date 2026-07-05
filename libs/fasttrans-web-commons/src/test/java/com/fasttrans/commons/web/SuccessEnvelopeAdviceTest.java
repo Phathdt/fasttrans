@@ -75,6 +75,14 @@ class SuccessEnvelopeAdviceTest {
         public SimpleData actuatorHealth() {
             return new SimpleData("health", 3);
         }
+
+        // Returns a raw String — serialized by StringHttpMessageConverter, not
+        // Jackson. The advice must NOT engage (supports() excludes it), otherwise
+        // wrapping in ApiResponse would throw ClassCastException.
+        @GetMapping(value = "/plain-string", produces = "application/json")
+        public String plainString() {
+            return "\"just a string\"";
+        }
     }
 
     public static class SimpleData {
@@ -188,5 +196,16 @@ class SuccessEnvelopeAdviceTest {
                 .andExpect(jsonPath("$.data.message").value("health"))
                 .andExpect(jsonPath("$.data.value").value(3))
                 .andExpect(jsonPath("$.meta.requestId").isNotEmpty());
+    }
+
+    // ── String body: advice must not engage (no ClassCastException) ──
+
+    @Test
+    void string_body_not_wrapped() throws Exception {
+        // supports() excludes StringHttpMessageConverter, so the body passes
+        // through untouched instead of being wrapped and blowing up.
+        mockMvc.perform(get("/fake/plain-string"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("\"just a string\""));
     }
 }

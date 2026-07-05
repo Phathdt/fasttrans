@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = {TransferController.class, GlobalExceptionHandler.class})
+@WebMvcTest(controllers = {TransferController.class, TransferExceptionHandler.class})
 @Import(WebCommonsAutoConfiguration.class)
 class TransferControllerTest {
 

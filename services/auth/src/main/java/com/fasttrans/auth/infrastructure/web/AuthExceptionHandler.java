@@ -12,11 +12,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 // Framework exceptions (validation, missing header, unexpected) are handled by
 // the base handler in fasttrans-web-commons.
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class AuthExceptionHandler {
 
     private final ErrorResponseFactory errors;
 
-    public GlobalExceptionHandler(ErrorResponseFactory errors) {
+    public AuthExceptionHandler(ErrorResponseFactory errors) {
         this.errors = errors;
     }
 

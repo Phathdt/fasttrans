@@ -6,6 +6,7 @@ import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.AbstractJackson2HttpMessageConverter;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 /**
@@ -27,8 +28,11 @@ public class SuccessEnvelopeAdvice implements ResponseBodyAdvice<Object> {
 
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
-        // Only wrap JSON responses; leave String/byte/other converters untouched.
-        return true;
+        // Only engage for Jackson JSON serialization. This excludes the String
+        // and byte[] converters, so a controller returning a String (even with
+        // produces=application/json) is left untouched — wrapping it in an
+        // ApiResponse would make StringHttpMessageConverter throw ClassCastException.
+        return AbstractJackson2HttpMessageConverter.class.isAssignableFrom(converterType);
     }
 
     @Override

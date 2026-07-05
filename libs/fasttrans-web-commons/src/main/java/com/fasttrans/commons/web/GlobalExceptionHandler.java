@@ -1,5 +1,6 @@
 package com.fasttrans.commons.web;
 
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
@@ -46,6 +47,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMissingHeader(MissingRequestHeaderException ex) {
         return errors.build(ErrorCode.MISSING_HEADER,
                 "Required header is missing: " + ex.getHeaderName(), ex);
+    }
+
+    /**
+     * Constraint violation on validated query params / path variables
+     * ({@code @Validated} on the controller) → 400 with per-field details.
+     * Without this it would fall through to the {@code Exception} catch-all and
+     * surface as a 500.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
+        List<FieldError> details = ex.getConstraintViolations().stream()
+                .map(v -> {
+                    String path = v.getPropertyPath().toString();
+                    String field = path.substring(path.lastIndexOf('.') + 1);
+                    return new FieldError(field, v.getMessage());
+                })
+                .toList();
+        return errors.build(ErrorCode.VALIDATION_FAILED, "Validation failed", details, ex);
     }
 
     /** Anything unexpected → 500 with a generic message (internal detail hidden). */
