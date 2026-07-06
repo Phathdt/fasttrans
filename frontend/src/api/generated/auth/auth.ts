@@ -15,8 +15,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  DataLoginResponse,
   ErrorResponse,
-  LoginEnvelope,
   LoginRequest
 } from '../models';
 
@@ -34,7 +34,7 @@ export const login = (
 ) => {
 
 
-      return customInstance<LoginEnvelope>(
+      return customInstance<DataLoginResponse>(
       {url: `/auth/login`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: loginRequest, signal

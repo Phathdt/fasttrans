@@ -7,7 +7,7 @@
 import type { LoginResponse } from './loginResponse.ts';
 import type { Meta } from './meta.ts';
 
-export interface LoginEnvelope {
+export interface DataLoginResponse {
   data: LoginResponse;
   meta: Meta;
 }

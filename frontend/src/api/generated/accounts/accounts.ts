@@ -20,9 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  ErrorResponse,
-  ListAccountsEnvelope,
-  LookupAccountEnvelope
+  DataAccountLookupResponse,
+  DataAccountResponseList,
+  ErrorResponse
 } from '../models';
 
 import { customInstance } from '../../axios-instance.ts';
@@ -54,7 +54,7 @@ export const listAccounts = (
 ) => {
 
 
-      return customInstance<ListAccountsEnvelope>(
+      return customInstance<DataAccountResponseList>(
       {url: `/accounts`, method: 'GET', signal
     },
       );
@@ -146,7 +146,7 @@ export const lookupAccount = (
 ) => {
 
 
-      return customInstance<LookupAccountEnvelope>(
+      return customInstance<DataAccountLookupResponse>(
       {url: `/accounts/${accountRef}`, method: 'GET', signal
     },
       );

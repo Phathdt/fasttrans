@@ -24,11 +24,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  CreateTransferEnvelope,
   CreateTransferRequest,
-  ErrorResponse,
-  GetTransferEnvelope,
-  ListTransfersEnvelope
+  DataCreateTransferResponse,
+  DataTransferResponse,
+  DataTransferResponseList,
+  ErrorResponse
 } from '../models';
 
 import { customInstance } from '../../axios-instance.ts';
@@ -60,7 +60,7 @@ export const listTransfers = (
 ) => {
 
 
-      return customInstance<ListTransfersEnvelope>(
+      return customInstance<DataTransferResponseList>(
       {url: `/transfers`, method: 'GET', signal
     },
       );
@@ -152,7 +152,7 @@ export const createTransfer = (
 ) => {
 
 
-      return customInstance<CreateTransferEnvelope>(
+      return customInstance<DataCreateTransferResponse>(
       {url: `/transfers`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: createTransferRequest, signal
@@ -216,7 +216,7 @@ export const getTransfer = (
 ) => {
 
 
-      return customInstance<GetTransferEnvelope>(
+      return customInstance<DataTransferResponse>(
       {url: `/transfers/${id}`, method: 'GET', signal
     },
       );

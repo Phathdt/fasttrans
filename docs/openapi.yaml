@@ -30,7 +30,7 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/LoginEnvelope"
+                $ref: "#/components/schemas/DataLoginResponse"
         "400": &a1
           description: Bad Request
           content:
@@ -79,7 +79,7 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/ListTransfersEnvelope"
+                $ref: "#/components/schemas/DataTransferResponseList"
         "400": *a1
         "401": *a2
         "403": *a3
@@ -110,7 +110,7 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/CreateTransferEnvelope"
+                $ref: "#/components/schemas/DataCreateTransferResponse"
         "400": *a1
         "401": *a2
         "403": *a3
@@ -136,7 +136,7 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/GetTransferEnvelope"
+                $ref: "#/components/schemas/DataTransferResponse"
         "400": *a1
         "401": *a2
         "403": *a3
@@ -155,7 +155,7 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/ListAccountsEnvelope"
+                $ref: "#/components/schemas/DataAccountResponseList"
         "400": *a1
         "401": *a2
         "403": *a3
@@ -180,7 +180,7 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/LookupAccountEnvelope"
+                $ref: "#/components/schemas/DataAccountLookupResponse"
         "400": *a1
         "401": *a2
         "403": *a3
@@ -253,7 +253,7 @@ components:
       required:
         - error
         - meta
-    LoginEnvelope:
+    DataLoginResponse:
       type: object
       properties:
         data:
@@ -263,7 +263,7 @@ components:
       required:
         - data
         - meta
-    ListTransfersEnvelope:
+    DataTransferResponseList:
       type: object
       properties:
         data:
@@ -275,7 +275,7 @@ components:
       required:
         - data
         - meta
-    CreateTransferEnvelope:
+    DataCreateTransferResponse:
       type: object
       properties:
         data:
@@ -285,7 +285,7 @@ components:
       required:
         - data
         - meta
-    GetTransferEnvelope:
+    DataTransferResponse:
       type: object
       properties:
         data:
@@ -295,7 +295,7 @@ components:
       required:
         - data
         - meta
-    ListAccountsEnvelope:
+    DataAccountResponseList:
       type: object
       properties:
         data:
@@ -307,7 +307,7 @@ components:
       required:
         - data
         - meta
-    LookupAccountEnvelope:
+    DataAccountLookupResponse:
       type: object
       properties:
         data:

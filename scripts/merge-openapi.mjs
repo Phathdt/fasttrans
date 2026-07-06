@@ -64,23 +64,38 @@ const mergedTags = [
 // excluded (no content[*].schema to transform).
 // ---------------------------------------------------------------------------
 
-// Named success-envelope components, one per operation, collected while walking
-// the paths and appended to components.schemas. Using a named component (rather
-// than an inline object) makes orval emit a self-documenting type per endpoint —
-// e.g. `ListAccountsEnvelope` instead of an anonymous `ListAccounts200`.
+// Named success-envelope components, collected while walking the paths and
+// appended to components.schemas. Using a named component (rather than an inline
+// object) makes orval emit a self-documenting type. The name is derived from the
+// payload DTO — `Data<Dto>` for an object, `Data<Dto>List` for an array — so e.g.
+// looking up an account yields `DataAccountLookupResponse` and listing accounts
+// yields `DataAccountResponseList`. Two operations returning the same shape share
+// one component.
 const generatedEnvelopeSchemas = {};
 
-/** PascalCase an operationId: `listAccounts` → `ListAccounts`. */
-function pascalCase(operationId) {
-  return operationId.charAt(0).toUpperCase() + operationId.slice(1);
+/** Last path segment of a `$ref`: `#/components/schemas/AccountResponse` → `AccountResponse`. */
+function refName(ref) {
+  return ref.slice(ref.lastIndexOf('/') + 1);
 }
 
 /**
- * Register a `${OperationId}Envelope` component wrapping the original 2xx schema
- * as `{ data, meta }` and return a $ref to it. Falls back to an inline wrapper
- * when the operation has no operationId to name the component after.
+ * Derive the envelope component name from the wrapped payload schema:
+ *   { $ref: AccountResponse }              → DataAccountResponse
+ *   array of { $ref: AccountResponse }      → DataAccountResponseList
+ * Returns null when the shape can't be named (inline/anonymous schema).
  */
-function wrapInDataEnvelope(originalSchema, operationId) {
+function envelopeNameFor(schema) {
+  if (schema.$ref) return `Data${refName(schema.$ref)}`;
+  if (schema.type === 'array' && schema.items?.$ref) return `Data${refName(schema.items.$ref)}List`;
+  return null;
+}
+
+/**
+ * Register a `Data<Dto>` / `Data<Dto>List` component wrapping the original 2xx
+ * schema as `{ data, meta }` and return a $ref to it. Falls back to an inline
+ * wrapper when the payload shape can't be named.
+ */
+function wrapInDataEnvelope(originalSchema) {
   const wrapper = {
     type: 'object',
     properties: {
@@ -89,9 +104,10 @@ function wrapInDataEnvelope(originalSchema, operationId) {
     },
     required: ['data', 'meta'],
   };
-  if (!operationId) return wrapper;
 
-  const name = `${pascalCase(operationId)}Envelope`;
+  const name = envelopeNameFor(originalSchema);
+  if (!name) return wrapper;
+
   generatedEnvelopeSchemas[name] = wrapper;
   return { $ref: `#/components/schemas/${name}` };
 }
@@ -138,7 +154,7 @@ for (const pathItem of Object.values(mergedPaths)) {
       if (code >= 200 && code < 300 && response.content) {
         for (const mediaObj of Object.values(response.content)) {
           if (mediaObj && mediaObj.schema) {
-            mediaObj.schema = wrapInDataEnvelope(mediaObj.schema, operation.operationId);
+            mediaObj.schema = wrapInDataEnvelope(mediaObj.schema);
           }
         }
       }

@@ -4,10 +4,10 @@
  * FastTrans API
  * OpenAPI spec version: 1.0.0
  */
+import type { AccountResponse } from './accountResponse.ts';
 import type { Meta } from './meta.ts';
-import type { TransferResponse } from './transferResponse.ts';
 
-export interface ListTransfersEnvelope {
-  data: TransferResponse[];
+export interface DataAccountResponseList {
+  data: AccountResponse[];
   meta: Meta;
 }
