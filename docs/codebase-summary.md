@@ -251,6 +251,6 @@ pnpm install && pnpm build
 
 - **Events**: `docs/events/transfer-events.md`
 - **DB Schema + Seed**: `docs/db/schema.md`
-- **gRPC Proto**: `proto/account.proto`
+- **gRPC Proto**: `libs/fasttrans-grpc-contract/src/main/proto/account.proto`
 - **Diagrams**: `docs/diagrams.md` (Mermaid)
 - **OpenAPI**: `docs/openapi.yaml` (merged from services)

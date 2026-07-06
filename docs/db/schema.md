@@ -155,4 +155,4 @@ CREATE INDEX idx_outbox_pending ON outbox (status, created_at) WHERE status = 'P
 
 ## Event & gRPC contract (reference)
 - Event schema: `docs/events/transfer-events.md`.
-- gRPC proto: `proto/account.proto` (ValidateOwnership, ListAccounts).
+- gRPC proto: `libs/fasttrans-grpc-contract/src/main/proto/account.proto` (ValidateOwnership, ListAccounts).
