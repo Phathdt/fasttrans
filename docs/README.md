@@ -15,7 +15,7 @@ Detailed docs per service, plus shared database, event, and gRPC contracts. Impl
 
 - Database schema (all 3 DBs) + seed: [db/schema.md](db/schema.md)
 - Kafka/Redpanda event schemas: [events/transfer-events.md](events/transfer-events.md)
-- gRPC proto: `proto/account.proto` (created in Phase 1)
+- gRPC proto: `libs/fasttrans-grpc-contract/src/main/proto/account.proto` (created in Phase 1)
 
 ## Diagrams
 

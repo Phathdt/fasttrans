@@ -564,7 +564,7 @@ Infrastructure:
 
 - **Events**: `docs/events/transfer-events.md` (Kafka message schemas)
 - **Database**: `docs/db/schema.md` (DDL, indexes, constraints)
-- **gRPC**: `proto/account.proto` (protobuf definition)
+- **gRPC**: `libs/fasttrans-grpc-contract/src/main/proto/account.proto` (protobuf definition)
 - **Code Standards**: `docs/code-standards.md` (3-layer structure, naming)
 - **Services**: `docs/services/{auth,transfer,account}-service.md` (package layout, API detail)
 

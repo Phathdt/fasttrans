@@ -144,7 +144,7 @@ Response `200`:
 
 ## gRPC (client)
 
-Calls account service (`account:9090`, proto `proto/account.proto`):
+Calls account service (`account:9090`, proto `libs/fasttrans-grpc-contract/src/main/proto/account.proto`):
 - `ValidateOwnership(userId, accountRef) → {owned}` — blocking, 5s deadline, on create.
 - `ListAccounts(userId) → repeated Account` — backs `GET /accounts`.
 

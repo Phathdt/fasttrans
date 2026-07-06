@@ -21,6 +21,7 @@
 
   <modules>
     <module>libs/fasttrans-web-commons</module>
+    <module>libs/fasttrans-grpc-contract</module>
     <module>services/auth</module>
     <module>services/transfer</module>
     <module>services/account</module>
