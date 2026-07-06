@@ -2,10 +2,12 @@ package com.fasttrans.auth.infrastructure.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasttrans.auth.application.services.AuthService;
+import com.fasttrans.commons.web.WebCommonsAutoConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -20,6 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
+@Import(WebCommonsAutoConfiguration.class)
 class AuthControllerTest {
 
     @Autowired MockMvc mockMvc;
@@ -38,26 +41,35 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"alice\",\"password\":\"password\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("jwt-token"))
-                .andExpect(jsonPath("$.expiresIn").value(3600));
+                .andExpect(jsonPath("$.data.token").value("jwt-token"))
+                .andExpect(jsonPath("$.data.expiresIn").value(3600))
+                .andExpect(jsonPath("$.meta.requestId").isNotEmpty())
+                .andExpect(jsonPath("$.meta.timestamp").isNotEmpty());
     }
 
     @Test
-    void login_wrongCredentials_returns401() throws Exception {
+    void login_wrongCredentials_returns401WithErrorEnvelope() throws Exception {
         when(authService.login(anyString(), anyString())).thenReturn(Optional.empty());
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"alice\",\"password\":\"wrong\"}"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").isNotEmpty())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.meta.requestId").isNotEmpty());
     }
 
     @Test
-    void login_missingFields_returns400() throws Exception {
+    void login_missingFields_returns400WithValidationError() throws Exception {
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"\",\"password\":\"\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").isNotEmpty())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.error.details").isArray())
+                .andExpect(jsonPath("$.meta.requestId").isNotEmpty());
     }
 
     // --- GET /auth/verify ---

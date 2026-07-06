@@ -38,9 +38,9 @@ public class TransferController {
      * X-User-Id header: injected by the gateway after ForwardAuth.
      * Idempotency-Key header: the client must provide it.
      */
-    @Operation(summary = "Create a transfer (or idempotent replay)")
+    @Operation(summary = "Create a transfer (or idempotent replay)", operationId = "createTransfer")
     @PostMapping("/transfers")
-    public ResponseEntity<CreateTransferResponse> create(
+    public ResponseEntity<CreateTransferResponse> createTransfer(
             @Parameter(hidden = true) @RequestHeader("X-User-Id") String userIdHeader,
             @Parameter(in = ParameterIn.HEADER, name = "Idempotency-Key", required = true,
                     description = "Client-generated key; replays return the same transfer")
@@ -57,9 +57,9 @@ public class TransferController {
     /**
      * GET /transfers — the user's transfers, most recent first.
      */
-    @Operation(summary = "List the current user's transfers, most recent first")
+    @Operation(summary = "List the current user's transfers, most recent first", operationId = "listTransfers")
     @GetMapping("/transfers")
-    public List<TransferResponse> list(
+    public List<TransferResponse> listTransfers(
             @Parameter(hidden = true) @RequestHeader("X-User-Id") String userIdHeader) {
         return transferService.list(UUID.fromString(userIdHeader));
     }
@@ -67,9 +67,9 @@ public class TransferController {
     /**
      * GET /transfers/{id} — details of a single transfer; 404 if it does not belong to the user.
      */
-    @Operation(summary = "Get a single transfer by id")
+    @Operation(summary = "Get a single transfer by id", operationId = "getTransfer")
     @GetMapping("/transfers/{id}")
-    public TransferResponse detail(
+    public TransferResponse getTransfer(
             @PathVariable UUID id,
             @Parameter(hidden = true) @RequestHeader("X-User-Id") String userIdHeader) {
         return transferService.detail(id, UUID.fromString(userIdHeader));

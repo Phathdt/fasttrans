@@ -20,13 +20,17 @@ services:
 
   # ─────────────────────────── Services ───────────────────────────
   auth:
-    build: ./services/auth
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
     environment:
       DB_HOST: postgres
       DB_USER: fasttrans
       DB_PASSWORD: fasttrans
       REDIS_HOST: redis
       JWT_SECRET: change-me-demo-secret-key-at-least-32-bytes-long!!
+      # Set to "true" to include stack traces in error responses (dev only)
+      FASTTRANS_ERROR_INCLUDE_STACKTRACE: "false"
     depends_on:
       postgres:
         condition: service_healthy
@@ -57,13 +61,17 @@ services:
       - "traefik.http.services.auth.loadbalancer.server.port=8080"
 
   transfer:
-    build: ./services/transfer
+    build:
+      context: .
+      dockerfile: services/transfer/Dockerfile
     environment:
       DB_HOST: postgres
       DB_USER: fasttrans
       DB_PASSWORD: fasttrans
       KAFKA_BOOTSTRAP: redpanda:29092
       ACCOUNT_GRPC_HOST: account
+      # Set to "true" to include stack traces in error responses (dev only)
+      FASTTRANS_ERROR_INCLUDE_STACKTRACE: "false"
     depends_on:
       postgres:
         condition: service_healthy
@@ -87,12 +95,16 @@ services:
       - "traefik.http.services.transfer.loadbalancer.server.port=8080"
 
   account:
-    build: ./services/account
+    build:
+      context: .
+      dockerfile: services/account/Dockerfile
     environment:
       DB_HOST: postgres
       DB_USER: fasttrans
       DB_PASSWORD: fasttrans
       KAFKA_BOOTSTRAP: redpanda:29092
+      # Set to "true" to include stack traces in error responses (dev only)
+      FASTTRANS_ERROR_INCLUDE_STACKTRACE: "false"
     depends_on:
       postgres:
         condition: service_healthy

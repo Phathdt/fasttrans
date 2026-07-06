@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Shared web library: REST response envelope ({ data, meta } / { error, meta }),
+  error codes, the ResponseBodyAdvice that wraps success bodies, a base
+  @RestControllerAdvice for framework exceptions, and a TraceContext helper.
+
+  Wired into services via Spring Boot auto-configuration (see
+  src/main/resources/META-INF/spring/...AutoConfiguration.imports) so a service
+  only needs to depend on this jar — no @ComponentScan changes required.
+
+  Parent is spring-boot-starter-parent (same version as the services) purely to
+  align spring-web / jackson / micrometer versions. This is a plain jar, not a
+  bootable app, so no spring-boot-maven-plugin.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.4</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.fasttrans</groupId>
+  <artifactId>fasttrans-web-commons</artifactId>
+  <version>1.0.0</version>
+  <name>fasttrans-web-commons</name>
+
+  <properties>
+    <java.version>21</java.version>
+  </properties>
+
+  <dependencies>
+    <!-- Web MVC: ResponseBodyAdvice + @RestControllerAdvice + servlet types -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <!-- Bean validation exception types (MethodArgumentNotValidException) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+    <!-- Auto-configuration annotations + processor for the imports file -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <!-- Micrometer tracing API: TraceContext reads the current traceId.
+         Bridge (brave) is provided by each service at runtime (Phase 2). -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-tracing</artifactId>
+    </dependency>
+
+    <!-- Test -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

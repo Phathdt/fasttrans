@@ -25,12 +25,12 @@ section "1. Login"
 
 ALICE_TOKEN=$(curl -sf -X POST "$BASE/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"username":"alice","password":"password"}' | jq -r '.token')
+  -d '{"username":"alice","password":"password"}' | jq -r '.data.token')
 [ -n "$ALICE_TOKEN" ] && green "alice login OK" || { red "alice login FAILED"; exit 1; }
 
 BOB_TOKEN=$(curl -sf -X POST "$BASE/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"username":"bob","password":"password"}' | jq -r '.token')
+  -d '{"username":"bob","password":"password"}' | jq -r '.data.token')
 [ -n "$BOB_TOKEN" ] && green "bob login OK" || { red "bob login FAILED"; exit 1; }
 
 # ── 2. Auth gate ─────────────────────────────────────────────────────
@@ -49,11 +49,11 @@ section "3. GET /accounts (account service)"
 
 ALICE_ACCOUNTS=$(curl -sf "$BASE/accounts" \
   -H "Authorization: Bearer $ALICE_TOKEN")
-ALICE_COUNT=$(echo "$ALICE_ACCOUNTS" | jq 'length')
+ALICE_COUNT=$(echo "$ALICE_ACCOUNTS" | jq '.data | length')
 [ "$ALICE_COUNT" = "2" ] && green "alice has 2 accounts" \
                           || red "Expected 2, got $ALICE_COUNT"
 
-ALICE_REFS=$(echo "$ALICE_ACCOUNTS" | jq -r '.[].accountRef')
+ALICE_REFS=$(echo "$ALICE_ACCOUNTS" | jq -r '.data[].accountRef')
 echo "$ALICE_REFS" | grep -q "100000000001" && green "alice A1 ref present" \
                                              || red "alice A1 100000000001 missing"
 echo "$ALICE_REFS" | grep -q "100000000002" && green "alice A2 ref present" \
@@ -61,7 +61,7 @@ echo "$ALICE_REFS" | grep -q "100000000002" && green "alice A2 ref present" \
 
 BOB_ACCOUNTS=$(curl -sf "$BASE/accounts" \
   -H "Authorization: Bearer $BOB_TOKEN")
-BOB_COUNT=$(echo "$BOB_ACCOUNTS" | jq 'length')
+BOB_COUNT=$(echo "$BOB_ACCOUNTS" | jq '.data | length')
 [ "$BOB_COUNT" = "1" ] && green "bob has 1 account" \
                         || red "Expected 1, got $BOB_COUNT"
 
@@ -74,7 +74,7 @@ LOOKUP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/accounts/$ALICE_RE
 
 LOOKUP_BODY=$(curl -sf "$BASE/accounts/$ALICE_REF" \
   -H "Authorization: Bearer $ALICE_TOKEN")
-OWNER_NAME=$(echo "$LOOKUP_BODY" | jq -r '.ownerName // empty')
+OWNER_NAME=$(echo "$LOOKUP_BODY" | jq -r '.data.ownerName // empty')
 [ -n "$OWNER_NAME" ] && green "GET /accounts/$ALICE_REF has ownerName=$OWNER_NAME" \
                       || red "GET /accounts/$ALICE_REF missing ownerName"
 
@@ -115,8 +115,8 @@ CREATE_RESP=$(curl -sf -X POST "$BASE/transfers" \
   -H "Idempotency-Key: $IDEM_OK" \
   -H "Content-Type: application/json" \
   -d '{"fromAccountRef":"100000000001","toAccountRef":"200000000001","amount":100000,"currency":"VND"}')
-TRANSFER_ID=$(echo "$CREATE_RESP" | jq -r '.id')
-INIT_STATUS=$(echo "$CREATE_RESP" | jq -r '.status')
+TRANSFER_ID=$(echo "$CREATE_RESP" | jq -r '.data.id')
+INIT_STATUS=$(echo "$CREATE_RESP" | jq -r '.data.status')
 
 [ -n "$TRANSFER_ID" ] && green "Transfer created id=$TRANSFER_ID" \
                        || { red "Transfer create failed: $CREATE_RESP"; exit 1; }
@@ -130,7 +130,7 @@ FINAL_STATUS="PENDING"
 for i in $(seq 1 15); do
   sleep 1
   FINAL_STATUS=$(curl -sf "$BASE/transfers/$TRANSFER_ID" \
-    -H "Authorization: Bearer $ALICE_TOKEN" | jq -r '.status')
+    -H "Authorization: Bearer $ALICE_TOKEN" | jq -r '.data.status')
   [ "$FINAL_STATUS" != "PENDING" ] && break
   info "Poll $i/15 still PENDING..."
 done
@@ -145,7 +145,7 @@ REPLAY_RESP=$(curl -sf -X POST "$BASE/transfers" \
   -H "Idempotency-Key: $IDEM_OK" \
   -H "Content-Type: application/json" \
   -d '{"fromAccountRef":"100000000001","toAccountRef":"200000000001","amount":100000,"currency":"VND"}')
-REPLAY_ID=$(echo "$REPLAY_RESP" | jq -r '.id')
+REPLAY_ID=$(echo "$REPLAY_RESP" | jq -r '.data.id')
 [ "$REPLAY_ID" = "$TRANSFER_ID" ] && green "Replay returns same transfer id" \
                                    || red "Replay id mismatch: $REPLAY_ID != $TRANSFER_ID"
 
@@ -158,15 +158,15 @@ INSUF_RESP=$(curl -sf -X POST "$BASE/transfers" \
   -H "Idempotency-Key: $IDEM_INSUF" \
   -H "Content-Type: application/json" \
   -d '{"fromAccountRef":"100000000002","toAccountRef":"200000000001","amount":999999999,"currency":"VND"}')
-INSUF_ID=$(echo "$INSUF_RESP" | jq -r '.id')
+INSUF_ID=$(echo "$INSUF_RESP" | jq -r '.data.id')
 
 INSUF_FINAL="PENDING"
 for i in $(seq 1 15); do
   sleep 1
   DETAIL=$(curl -sf "$BASE/transfers/$INSUF_ID" \
     -H "Authorization: Bearer $ALICE_TOKEN")
-  INSUF_FINAL=$(echo "$DETAIL" | jq -r '.status')
-  INSUF_REASON=$(echo "$DETAIL" | jq -r '.reason // empty')
+  INSUF_FINAL=$(echo "$DETAIL" | jq -r '.data.status')
+  INSUF_REASON=$(echo "$DETAIL" | jq -r '.data.reason // empty')
   [ "$INSUF_FINAL" != "PENDING" ] && break
   info "Poll $i/15 still PENDING..."
 done
@@ -184,15 +184,15 @@ NF_RESP=$(curl -sf -X POST "$BASE/transfers" \
   -H "Idempotency-Key: $IDEM_NF" \
   -H "Content-Type: application/json" \
   -d '{"fromAccountRef":"100000000001","toAccountRef":"999999999999","amount":1000,"currency":"VND"}')
-NF_ID=$(echo "$NF_RESP" | jq -r '.id')
+NF_ID=$(echo "$NF_RESP" | jq -r '.data.id')
 
 NF_FINAL="PENDING"
 for i in $(seq 1 15); do
   sleep 1
   NF_DETAIL=$(curl -sf "$BASE/transfers/$NF_ID" \
     -H "Authorization: Bearer $ALICE_TOKEN")
-  NF_FINAL=$(echo "$NF_DETAIL" | jq -r '.status')
-  NF_REASON=$(echo "$NF_DETAIL" | jq -r '.reason // empty')
+  NF_FINAL=$(echo "$NF_DETAIL" | jq -r '.data.status')
+  NF_REASON=$(echo "$NF_DETAIL" | jq -r '.data.reason // empty')
   [ "$NF_FINAL" != "PENDING" ] && break
   info "Poll $i/15 still PENDING..."
 done
@@ -206,7 +206,7 @@ section "10. GET /transfers lists user's transfers"
 
 ALICE_TRANSFERS=$(curl -sf "$BASE/transfers" \
   -H "Authorization: Bearer $ALICE_TOKEN")
-COUNT=$(echo "$ALICE_TRANSFERS" | jq 'length')
+COUNT=$(echo "$ALICE_TRANSFERS" | jq '.data | length')
 [ "$COUNT" -ge "1" ] && green "alice transfers list count=$COUNT" \
                       || red "Expected >=1 transfers, got $COUNT"
 

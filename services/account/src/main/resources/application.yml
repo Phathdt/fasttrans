@@ -1,6 +1,12 @@
 server:
   port: 8080   # Tomcat (Spring MVC) — REST (accounts + lookup) + actuator health
 
+# Include stack traces in error envelopes only when explicitly enabled (dev/debug).
+# Default off so production responses never leak internal detail.
+fasttrans:
+  error:
+    include-stacktrace: ${FASTTRANS_ERROR_INCLUDE_STACKTRACE:false}
+
 spring:
   application:
     name: account-service
@@ -17,6 +23,15 @@ spring:
     baseline-on-migrate: true
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    # Emit/read trace headers on Kafka messages. NOTE: the Outbox relay produces
+    # from a scheduled poller (not the request thread), and the outbox row stores
+    # no trace header, so the async flow is NOT end-to-end continuous — each hop
+    # gets its own traceId. That is acceptable: every error still carries a
+    # traceId to correlate that service's logs.
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
 
 grpc:
   server:
@@ -31,3 +46,8 @@ management:
     health:
       probes:
         enabled: true
+  # Distributed tracing: sample every request (demo). traceId lands in the MDC
+  # and in the error-envelope meta.requestId. No collector/reporter configured.
+  tracing:
+    sampling:
+      probability: 1.0

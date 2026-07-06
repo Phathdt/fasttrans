@@ -1,0 +1,21 @@
+# Build artifacts — never needed in Docker context
+**/target
+
+# Frontend dependencies and dist
+**/node_modules
+frontend/dist
+
+# Docs and plans — not needed for build
+plans/
+docs/
+*.md
+
+# Git and CI metadata
+.git/
+.github/
+
+# Local config / IDE files
+.env*
+.idea/
+.vscode/
+*.iml

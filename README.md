@@ -115,9 +115,11 @@ Money is stored as `bigint` in the smallest unit (VND: 1 = 1 dong). Accounts are
 
 ## API (qua Traefik `:4000`)
 
+Every REST response is enveloped: success → `{ data, meta }`, error → `{ error: { code, message, details? }, meta }` (HTTP status stays truthful). `meta` carries `{ requestId, timestamp }` where `requestId` is the traceId. `/auth/verify` is header-only (not enveloped).
+
 | Method | Path              | Auth        | Description                                  |
 | ------ | ----------------- | ----------- | -------------------------------------------- |
-| POST   | `/auth/login`     | —           | `{username,password}` → `{token}`            |
+| POST   | `/auth/login`     | —           | `{username,password}` → `{ data: { token } }` |
 | GET    | `/auth/verify`    | Bearer      | ForwardAuth endpoint (internal)              |
 | GET    | `/accounts`       | ForwardAuth | list the user's accounts (gRPC)              |
 | POST   | `/transfers`      | ForwardAuth | create a transfer (`Idempotency-Key` header) |
@@ -142,10 +144,13 @@ bash scripts/e2e-smoke.sh
 Or manually:
 
 ```bash
+# Every REST response is enveloped: success → { data, meta }, error → { error, meta }.
+# Read the payload from `.data` (the examples below unwrap it with jq).
+
 # 1. Login to get a token
 TOKEN=$(curl -sf -X POST http://localhost:4000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"alice","password":"password"}' | jq -r '.token')
+  -d '{"username":"alice","password":"password"}' | jq -r '.data.token')
 
 # 2. List accounts (gRPC ListAccounts)
 curl -s http://localhost:4000/accounts \

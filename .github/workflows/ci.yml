@@ -34,8 +34,7 @@ jobs:
           cache: maven
 
       - name: Verify (unit + integration + coverage gate)
-        working-directory: services/${{ matrix.service }}
-        run: mvn --batch-mode --no-transfer-progress clean verify
+        run: mvn --batch-mode --no-transfer-progress -pl services/${{ matrix.service }} -am clean verify
 
       - name: Upload coverage report
         if: always()

@@ -1,14 +1,18 @@
 # ── Build stage ──
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
-COPY pom.xml .
-RUN mvn -q -B dependency:go-offline
-COPY src ./src
-RUN mvn -q -B clean package -DskipTests
+# Build + install the shared library first, then build the service standalone.
+# The service pom uses spring-boot-starter-parent (not the root aggregator) and
+# resolves fasttrans-web-commons from the local .m2, so the aggregator pom is
+# not needed inside the image.
+COPY libs/ ./libs/
+RUN mvn -q -B -f libs/fasttrans-web-commons/pom.xml -DskipTests install
+COPY services/transfer/ ./services/transfer/
+RUN mvn -q -B -f services/transfer/pom.xml -DskipTests clean package
 
 # ── Runtime stage ──
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/services/transfer/target/*.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

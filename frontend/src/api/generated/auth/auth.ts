@@ -15,8 +15,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  LoginRequest,
-  LoginResponse
+  DataLoginResponse,
+  ErrorResponse,
+  LoginRequest
 } from '../models';
 
 import { customInstance } from '../../axios-instance.ts';
@@ -33,7 +34,7 @@ export const login = (
 ) => {
 
 
-      return customInstance<LoginResponse>(
+      return customInstance<DataLoginResponse>(
       {url: `/auth/login`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: loginRequest, signal
@@ -44,7 +45,7 @@ export const login = (
 
 
 
-export const getLoginMutationOptions = <TError = unknown,
+export const getLoginMutationOptions = <TError = ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext>, }
 ): UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext> => {
 
@@ -73,12 +74,12 @@ const {mutation: mutationOptions} = options ?
 
     export type LoginMutationResult = NonNullable<Awaited<ReturnType<typeof login>>>
     export type LoginMutationBody = LoginRequest
-    export type LoginMutationError = unknown
+    export type LoginMutationError = ErrorResponse
 
     /**
  * @summary Log in with username/password and receive a bearer token
  */
-export const useLogin = <TError = unknown,
+export const useLogin = <TError = ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof login>>,

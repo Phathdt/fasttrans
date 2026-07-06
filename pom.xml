@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Aggregator (reactor) pom for the FastTrans monorepo.
+  Purpose: build the shared library `fasttrans-web-commons` together with the
+  three services in one reactor so services can depend on the library.
+
+  IMPORTANT: this is an aggregator only (<modules>). It is intentionally NOT the
+  parent of the services — each service keeps spring-boot-starter-parent as its
+  <parent> to preserve Spring Boot's dependency and plugin management.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.fasttrans</groupId>
+  <artifactId>fasttrans-parent</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <name>fasttrans-parent</name>
+
+  <modules>
+    <module>libs/fasttrans-web-commons</module>
+    <module>services/auth</module>
+    <module>services/transfer</module>
+    <module>services/account</module>
+  </modules>
+</project>

@@ -1,6 +1,7 @@
 package com.fasttrans.transfer.infrastructure.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasttrans.commons.web.WebCommonsAutoConfiguration;
 import com.fasttrans.transfer.application.dto.CreateTransferRequest;
 import com.fasttrans.transfer.application.dto.TransferResponse;
 import com.fasttrans.transfer.application.services.TransferService;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,7 +27,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = {TransferController.class, GlobalExceptionHandler.class})
+@WebMvcTest(controllers = {TransferController.class, TransferExceptionHandler.class})
+@Import(WebCommonsAutoConfiguration.class)
 class TransferControllerTest {
 
     @Autowired private MockMvc mockMvc;
@@ -47,8 +50,8 @@ class TransferControllerTest {
                         .content(objectMapper.writeValueAsString(
                                 new CreateTransferRequest("ACC001", "ACC002", 100_000L, "VND"))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(response.id()))
-                .andExpect(jsonPath("$.status").value("PENDING"));
+                .andExpect(jsonPath("$.data.id").value(response.id()))
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
     }
 
     @Test
@@ -121,7 +124,7 @@ class TransferControllerTest {
         mockMvc.perform(get("/transfers")
                         .header("X-User-Id", USER_ID))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.data.length()").value(2));
     }
 
     @Test
@@ -133,7 +136,7 @@ class TransferControllerTest {
         mockMvc.perform(get("/transfers/{id}", id)
                         .header("X-User-Id", USER_ID))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(id.toString()));
+                .andExpect(jsonPath("$.data.id").value(id.toString()));
     }
 
     @Test

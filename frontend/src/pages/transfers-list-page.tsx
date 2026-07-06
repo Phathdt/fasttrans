@@ -1,7 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { AlertCircle, ArrowRight, LogOut, Plus, Loader2, Inbox } from 'lucide-react'
-import { useList } from '@/api/generated/transfers/transfers'
+import { useListTransfers } from '@/api/generated/transfers/transfers'
 import type { TransferResponse } from '@/api/generated/models'
+import { extractApiError } from '@/api/axios-instance'
 import { Button } from '@/components/ui/button'
 import { TransferStatusBadge } from '@/components/transfer-status-badge'
 import { formatDateTime, formatVnd, shortId } from '@/lib/format'
@@ -17,7 +18,9 @@ import { Card } from '@/components/ui/card'
 
 export default function TransfersListPage() {
   const navigate = useNavigate()
-  const { data: transfers, isLoading, isError } = useList()
+  const { data: transfers, isLoading, isError, error } = useListTransfers()
+
+  const errorMessage = isError ? extractApiError(error).message : null
 
   function handleLogout() {
     localStorage.removeItem('token')
@@ -60,7 +63,7 @@ export default function TransfersListPage() {
             className="flex items-center gap-2 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive"
           >
             <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
-            Failed to load transfers.
+            {errorMessage ?? 'Failed to load transfers.'}
           </p>
         )}
 

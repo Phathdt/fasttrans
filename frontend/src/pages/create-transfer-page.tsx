@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
 import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react'
-import { useListAccounts, useLookup } from '@/api/generated/accounts/accounts'
+import { useListAccounts, useLookupAccount } from '@/api/generated/accounts/accounts'
 import type { AccountResponse, CreateTransferRequest, CreateTransferResponse } from '@/api/generated/models'
-import { customInstance } from '@/api/axios-instance'
+import { customInstance, extractApiError } from '@/api/axios-instance'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -60,7 +60,7 @@ export default function CreateTransferPage() {
     data: lookupData,
     error: lookupError,
     isFetching: lookupFetching,
-  } = useLookup(trimmedTo, {
+  } = useLookupAccount(trimmedTo, {
     query: {
       enabled: trimmedTo.length === 12,
       retry: false,
@@ -80,16 +80,8 @@ export default function CreateTransferPage() {
       navigate(`/transfers/${res.id}`)
     },
     onError: (err: unknown) => {
-      const status = (err as AxiosError).response?.status
-      if (status === 403) {
-        setSubmitError('You do not own that source account (403).')
-      } else if (status === 503) {
-        setSubmitError('Account service unavailable. Please try again shortly.')
-      } else if (status === 400) {
-        setSubmitError('Bad request — check your inputs.')
-      } else {
-        setSubmitError('Transfer failed. Please try again.')
-      }
+      const { message } = extractApiError(err)
+      setSubmitError(message || 'Transfer failed. Please try again.')
     },
   })
 

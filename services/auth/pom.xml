@@ -39,6 +39,18 @@
   </dependencyManagement>
 
   <dependencies>
+    <!-- Shared REST envelope + error handling (auto-configured) -->
+    <dependency>
+      <groupId>com.fasttrans</groupId>
+      <artifactId>fasttrans-web-commons</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <!-- Distributed tracing: puts traceId in MDC + provides Tracer bean.
+         No zipkin-reporter — we only need the correlation id, not span export. -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-tracing-bridge-brave</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>

@@ -10,30 +10,30 @@ import * as zod from 'zod';
 /**
  * @summary List the current user's transfers, most recent first
  */
-export const ListResponse = zod.unknown()
+export const ListTransfersResponse = zod.unknown()
 
 /**
  * @summary Create a transfer (or idempotent replay)
  */
-export const CreateHeader = zod.object({
+export const CreateTransferHeader = zod.object({
   "Idempotency-Key": zod.string().describe('Client-generated key; replays return the same transfer')
 })
 
-export const CreateBody = zod.object({
+export const CreateTransferBody = zod.object({
   "fromAccountRef": zod.string(),
   "toAccountRef": zod.string(),
   "amount": zod.number().optional(),
   "currency": zod.string()
 })
 
-export const CreateResponse = zod.unknown()
+export const CreateTransferResponse = zod.unknown()
 
 /**
  * @summary Get a single transfer by id
  */
-export const DetailParams = zod.object({
+export const GetTransferParams = zod.object({
   "id": zod.uuid()
 })
 
-export const DetailResponse = zod.unknown()
+export const GetTransferResponse = zod.unknown()
 

@@ -30,27 +30,67 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/LoginResponse"
+                $ref: "#/components/schemas/DataLoginResponse"
+        "400": &a1
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401": &a2
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403": &a3
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404": &a4
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500": &a5
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503": &a6
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /transfers:
     get:
       tags:
         - transfers
       summary: List the current user's transfers, most recent first
-      operationId: list
+      operationId: listTransfers
       responses:
         "200":
           description: OK
           content:
             "*/*":
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TransferResponse"
+                $ref: "#/components/schemas/DataTransferResponseList"
+        "400": *a1
+        "401": *a2
+        "403": *a3
+        "404": *a4
+        "500": *a5
+        "503": *a6
     post:
       tags:
         - transfers
       summary: Create a transfer (or idempotent replay)
-      operationId: create
+      operationId: createTransfer
       parameters:
         - name: Idempotency-Key
           in: header
@@ -70,13 +110,19 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/CreateTransferResponse"
+                $ref: "#/components/schemas/DataCreateTransferResponse"
+        "400": *a1
+        "401": *a2
+        "403": *a3
+        "404": *a4
+        "500": *a5
+        "503": *a6
   /transfers/{id}:
     get:
       tags:
         - transfers
       summary: Get a single transfer by id
-      operationId: detail
+      operationId: getTransfer
       parameters:
         - name: id
           in: path
@@ -90,7 +136,13 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/TransferResponse"
+                $ref: "#/components/schemas/DataTransferResponse"
+        "400": *a1
+        "401": *a2
+        "403": *a3
+        "404": *a4
+        "500": *a5
+        "503": *a6
   /accounts:
     get:
       tags:
@@ -103,15 +155,19 @@ paths:
           content:
             "*/*":
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AccountResponse"
+                $ref: "#/components/schemas/DataAccountResponseList"
+        "400": *a1
+        "401": *a2
+        "403": *a3
+        "404": *a4
+        "500": *a5
+        "503": *a6
   /accounts/{accountRef}:
     get:
       tags:
         - accounts
       summary: Look up an account by its public ref (no balance)
-      operationId: lookup
+      operationId: lookupAccount
       parameters:
         - name: accountRef
           in: path
@@ -124,9 +180,143 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/AccountLookupResponse"
+                $ref: "#/components/schemas/DataAccountLookupResponse"
+        "400": *a1
+        "401": *a2
+        "403": *a3
+        "404": *a4
+        "500": *a5
+        "503": *a6
 components:
   schemas:
+    Meta:
+      type: object
+      properties:
+        requestId:
+          type: string
+          description: Correlation id — equals the current traceId (fallback UUID)
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO-8601 UTC instant the response was built
+      required:
+        - requestId
+        - timestamp
+    FieldError:
+      type: object
+      properties:
+        field:
+          type: string
+          description: The request field that failed validation
+        message:
+          type: string
+          description: The validation message for that field
+      required:
+        - field
+        - message
+    ErrorBody:
+      type: object
+      properties:
+        code:
+          type: string
+          enum:
+            - VALIDATION_FAILED
+            - MISSING_HEADER
+            - UNAUTHORIZED
+            - ACCOUNT_NOT_FOUND
+            - TRANSFER_NOT_FOUND
+            - OWNERSHIP_DENIED
+            - ACCOUNT_UNAVAILABLE
+            - INTERNAL_ERROR
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"
+          description: Validation failures; omitted when empty
+        stackTrace:
+          type: string
+          description: Populated only when the stacktrace flag is enabled; omitted otherwise
+      required:
+        - code
+        - message
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/ErrorBody"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required:
+        - error
+        - meta
+    DataLoginResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/LoginResponse"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required:
+        - data
+        - meta
+    DataTransferResponseList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransferResponse"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required:
+        - data
+        - meta
+    DataCreateTransferResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateTransferResponse"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required:
+        - data
+        - meta
+    DataTransferResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/TransferResponse"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required:
+        - data
+        - meta
+    DataAccountResponseList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountResponse"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required:
+        - data
+        - meta
+    DataAccountLookupResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AccountLookupResponse"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required:
+        - data
+        - meta
     LoginRequest:
       required:
         - password

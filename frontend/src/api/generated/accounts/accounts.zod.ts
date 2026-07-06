@@ -15,9 +15,9 @@ export const ListAccountsResponse = zod.unknown()
 /**
  * @summary Look up an account by its public ref (no balance)
  */
-export const LookupParams = zod.object({
+export const LookupAccountParams = zod.object({
   "accountRef": zod.string()
 })
 
-export const LookupResponse = zod.unknown()
+export const LookupAccountResponse = zod.unknown()
 
