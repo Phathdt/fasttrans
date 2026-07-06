@@ -130,7 +130,7 @@ Every REST response is enveloped: success → `{ data, meta }`, error → `{ err
 
 - Event schema: [docs/events/transfer-events.md](docs/events/transfer-events.md)
 - DB schema + seed: [docs/db/schema.md](docs/db/schema.md)
-- gRPC proto: [proto/account.proto](proto/account.proto)
+- gRPC proto: [libs/fasttrans-grpc-contract/src/main/proto/account.proto](libs/fasttrans-grpc-contract/src/main/proto/account.proto)
 - Docs index: [docs/README.md](docs/README.md)
 
 ## Demo walkthrough

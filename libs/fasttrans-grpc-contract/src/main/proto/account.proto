@@ -1,7 +1,8 @@
 syntax = "proto3";
 
-// Source of truth for the gRPC contract shared between transfer (client) and account (server).
-// Copy verbatim into services/transfer/src/main/proto and services/account/src/main/proto at build time.
+// Single source of truth for the gRPC contract shared between transfer (client)
+// and account (server). Built once into the fasttrans-grpc-contract jar; both
+// services depend on that jar rather than keeping their own proto copy.
 package fasttrans.account.v1;
 
 option java_multiple_files = true;

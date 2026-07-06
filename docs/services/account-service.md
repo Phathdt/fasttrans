@@ -115,7 +115,7 @@ Seed accounts (fixed UUIDs + account_ref): alice → A1 ref `100000000001` (1,00
 
 ## gRPC (server)
 
-Proto `proto/account.proto`, listening on `account:9090`. Read-only, no write transaction.
+Proto `libs/fasttrans-grpc-contract/src/main/proto/account.proto`, listening on `account:9090`. Read-only, no write transaction.
 
 ### ValidateOwnership
 ```
